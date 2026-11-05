@@ -14,7 +14,11 @@ Modes par jack (horloges, triolets, pointée, division libre, reset, run, euclid
 ### 1. Un vrai séquenceur MIDI (pas à pas et euclidien)
 - Séquences de notes (hauteur, vélocité, longueur), en mode pas à pas ou euclidien.
 - Envoi sur un canal au choix : 1 à 16, ou « ALL » (la même note sur les 16 canaux).
-- **Gammes** : reprendre toutes les gammes des séquenceurs Squarp Rhizome et « Monades » (liste exacte à confirmer samedi). Les notes sont ramenées dans la gamme choisie, avec une tonique au choix.
+- **Gammes** : reprendre les gammes de nos synthés FM-1 **Rhizome** et **Monades** (projets voisins `Projets-perso/M-VAVE FM1/`). Les deux utilisent la même table : `app/dsp/scale_table.inc`, générée par `tools/generate_scales.py`.
+  - Cela fait 91 gammes en 15 familles, avec la gamme CUSTOM et les ragas.
+  - Les notes sont ramenées dans la gamme choisie, avec une tonique au choix.
+  - Les 12 gammes **microtonales** (Scala) passeraient en MIDI par du pitch bend, comme dans Monades. Le pitch bend vaut pour tout un canal : une seule note à la fois par canal.
+  - Les **gamakas** (ornements des ragas) sont à étudier.
 - **Aléatoire** : notes, vélocités et octaves au hasard dans la gamme, avec une intensité réglable.
 - **Probabilité par pas.**
 - **Sous-pas** (« substeps », ratchets) : répéter un pas 2, 3 ou 4 fois dans sa durée.
@@ -22,7 +26,7 @@ Modes par jack (horloges, triolets, pointée, division libre, reset, run, euclid
 - Programmation sur l'écran du site ; lecture autonome, sans ordinateur, depuis la mémoire de la boîte.
 - **Faisabilité : oui, sans toucher au matériel.**
   - Il reste environ 50 % de mémoire programme et 1,4 Ko de RAM.
-  - Une gamme tient en 2 octets : des dizaines de gammes rentrent dans la mémoire programme.
+  - Une gamme de 12 notes tient en 2 octets, une gamme microtonale en quelques dizaines. Les 91 gammes tiennent dans la mémoire programme, et leurs noms restent sur le site.
   - L'EEPROM (1 Ko) limite le stockage des séquences, par exemple à 4 pistes de 32 pas.
   - Les deux prises MIDI envoient toujours la même chose.
   - « ALL » multiplie le trafic par 16 : à réserver aux séquences peu chargées.
