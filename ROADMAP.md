@@ -9,19 +9,24 @@ Modes par jack (horloges, triolets, pointée, division libre, reset, run, euclid
 - Accent sur le premier coup des rythmes euclidiens.
 - Légère variation aléatoire de la vélocité.
 
+**Règle : on ne soude rien, on exploite le matériel tel qu'il est.**
+
 ### 1. Un vrai séquenceur MIDI (pas à pas et euclidien)
-- Séquences de notes (hauteur, vélocité, longueur, probabilité par pas), en mode pas à pas ou euclidien.
+- Séquences de notes (hauteur, vélocité, longueur), en mode pas à pas ou euclidien.
 - Envoi sur un canal au choix : 1 à 16, ou « ALL » (la même note sur les 16 canaux).
+- **Gammes** : reprendre toutes les gammes des séquenceurs Squarp Rhizome et « Monades » (liste exacte à confirmer samedi). Les notes sont ramenées dans la gamme choisie, avec une tonique au choix.
+- **Aléatoire** : notes, vélocités et octaves au hasard dans la gamme, avec une intensité réglable.
+- **Probabilité par pas.**
+- **Sous-pas** (« substeps », ratchets) : répéter un pas 2, 3 ou 4 fois dans sa durée.
+- D'autres idées à discuter : sens de lecture (avant, arrière, aller-retour, hasard), longueur différente par piste, transposition.
 - Programmation sur l'écran du site ; lecture autonome, sans ordinateur, depuis la mémoire de la boîte.
 - **Faisabilité : oui, sans toucher au matériel.**
   - Il reste environ 50 % de mémoire programme et 1,4 Ko de RAM.
-  - L'EEPROM (1 Ko) limite le stockage, par exemple à 4 pistes de 32 pas.
+  - Une gamme tient en 2 octets : des dizaines de gammes rentrent dans la mémoire programme.
+  - L'EEPROM (1 Ko) limite le stockage des séquences, par exemple à 4 pistes de 32 pas.
   - Les deux prises MIDI envoient toujours la même chose.
   - « ALL » multiplie le trafic par 16 : à réserver aux séquences peu chargées.
 
 ### 2. Les jacks pour autre chose que des horloges
-- **Séquenceur de gates** (pas à pas ou euclidien) sur les jacks : **faisable sans matériel**, c'est le prolongement de ce qui existe.
-- **LFO et notes en CV** : les jacks ne sortent que 0 ou 5 V. Il faudrait :
-  - pour un **LFO** : du PWM (possible sur D3 et D5, pas sur D7) **plus un petit filtre RC** (1 résistance et 1 condensateur par jack) ;
-  - pour des **notes en CV (1 V/oct)** : un **convertisseur DAC** (par exemple un MCP4725 ou un MCP4822). Le PWM 8 bits est trop imprécis pour accorder des notes.
-  - **Ces deux points demandent donc une petite modification matérielle (soudure).** À décider samedi.
+- **Séquenceur de gates** (pas à pas ou euclidien, avec probabilité et sous-pas) sur les 3 jacks : faisable tel quel.
+- **LFO et notes en CV : abandonnés.** Les jacks ne sortent que 0 ou 5 V, et il faudrait souder un filtre ou un convertisseur.
