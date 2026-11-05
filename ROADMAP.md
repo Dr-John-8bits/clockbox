@@ -20,6 +20,9 @@ Modes par jack (horloges, triolets, pointée, division libre, reset, run, euclid
   - Les 12 gammes **microtonales** (Scala) passeraient en MIDI par du pitch bend, comme dans Monades. Le pitch bend vaut pour tout un canal : une seule note à la fois par canal.
   - Les **gamakas** (ornements des ragas) sont à étudier.
 - **Aléatoire** : notes, vélocités et octaves au hasard dans la gamme, avec une intensité réglable.
+- **Canal MIDI par pas** : chaque pas peut partir sur son propre canal (1 à 16), ou suivre le canal de la piste. Une seule séquence peut ainsi jouer plusieurs machines à tour de rôle, par exemple une basse et une nappe.
+  - Ça coûte un demi-octet par pas, soit 64 octets pour 4 pistes de 32 pas.
+  - Bonus : en répartissant les notes sur plusieurs canaux, les gammes microtonales (pitch bend par canal) peuvent jouer plusieurs notes à la fois.
 - **Probabilité par pas.**
 - **Sous-pas** (« substeps », ratchets) : répéter un pas 2, 3 ou 4 fois dans sa durée.
 - D'autres idées à discuter : sens de lecture (avant, arrière, aller-retour, hasard), longueur différente par piste, transposition.
