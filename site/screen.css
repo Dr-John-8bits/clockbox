@@ -329,3 +329,8 @@
   #seq .ovhead .undo { margin-left: auto; padding: 5px 12px; font-size: 13px; }
   #seq .copyto { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
   #seq .lanefoot input[type="number"] { width: 4.5em; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
+  #seq .gen { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 12px; margin: 6px 0 10px;
+    border: 1px dashed var(--line); border-radius: 10px; }
+  #seq .gen.on { border-style: solid; border-color: var(--ok); background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
+  #seq .gen input[type="range"] { width: 140px; accent-color: var(--ok); }
+  .lockrow { margin: 4px 0 6px; font-weight: 600; }

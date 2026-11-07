@@ -2,6 +2,7 @@
 // clockbox screen: contextual help bubbles ("?" buttons). Uses the globals of screen.js.
 const HELP = {
   fr: {
+    tLock: "Le potard ne change plus le tempo. Le tempo bloqué est gardé dans la boîte : elle redémarre à ce tempo, même débranchée. Charger un préréglage remet son tempo, qui reste bloqué. Idéal pour un concert : prépare ton patch, bloque, et rien ne bouge si on touche le potard. Le tempo peut toujours être changé depuis cette page.",
     transport: "Start lance tout (boîte, MIDI, jacks). Pause garde la position ; Reprendre repart de là. Début ramène au début. Le tempo se tape au dixième près, ou au rythme avec « Tap » ; le potard reprend la main dès que tu le bouges.",
     jacks: "Les 3 prises jack envoient des impulsions de 0 ou 5 V pour le modulaire. Chaque jack a son mode : une horloge, un reset, un run, ou les notes d'une piste du séquenceur. Tout est enregistré dans la boîte dès que tu cliques.",
     seq: "4 pistes qui jouent en MIDI. 1) Choisis une piste. 2) Active son MIDI (pastille verte) et son canal. 3) Allume des pas d'un clic. 4) Dessine les notes, vélocités… dans les barres. La séquence est gardée dans la boîte et joue sans ordinateur.",
@@ -18,6 +19,7 @@ const HELP = {
     sMidi: "La pastille d'une piste active ou coupe son MIDI. Verte = la piste joue sur le canal affiché. « MIDI coupé » = elle ne joue pas en MIDI (les jacks en mode Piste la suivent quand même).",
     sMode: "Pas à pas : tu allumes toi-même les pas. Euclidien : tu choisis un nombre de coups, la boîte les répartit régulièrement sur la longueur (3 coups sur 8 = tresillo, 5 sur 16 = bossa). Éteinte : la piste ne joue pas.",
     sLow: "Aucune note de la piste ne descend en dessous : une note plus grave remonte d'une octave, en restant dans la gamme. Par défaut MIDI 48, le premier do du MS-20 avec le VCO1 en 32'. Les notes proposées et les barres partent de là.",
+    sGen: "À chaque nouveau cycle de la piste, la boîte réinvente ce pourcentage de notes, dans la gamme, au-dessus de la note la plus basse et dans l'étendue choisie. 10 à 30 % : la mélodie évolue doucement. 100 % : tout change à chaque tour. Les notes inventées ne sont pas enregistrées : ta séquence revient au prochain allumage. « Garder ces notes » enregistre celles qui jouent.",
     sChannel: "Le canal MIDI de ton synthé (souvent 1). ALL envoie la même note aux 16 canaux. Un pas peut avoir son propre canal (barre « Canal »).",
     sScale: "Les 91 gammes de nos synthés Rhizome et Monades. Les notes sont toujours ramenées dans la gamme : impossible de jouer faux. Les gammes microtonales (maqams, 19/24 tons…) envoient un pitch bend : règle ton synthé sur ±2 demi-tons.",
     sLength: "Le nombre de pas de la piste (1 à 32). Des pistes de longueurs différentes se décalent entre elles : polyrythmes garantis.",
@@ -38,6 +40,7 @@ const HELP = {
     mMetro: "Une note MIDI sur le 1er temps, ou sur chaque temps (le 1er plus fort). Ce canal ne concerne que le métronome, pas les pistes du séquenceur.",
   },
   en: {
+    tLock: "The pot no longer changes the tempo. The locked tempo is kept in the box: it starts at that tempo, even after being unplugged. Loading a preset brings its tempo, which stays locked. Ideal for a gig: prepare your patch, lock, and nothing moves if someone touches the pot. The tempo can still be changed from this page.",
     transport: "Start runs everything (box, MIDI, jacks). Pause keeps the position; Continue resumes from there. To start goes back to the beginning. Type the tempo to 0.1, or tap it with “Tap”; the pot takes over as soon as you move it.",
     jacks: "The 3 jacks send 0 or 5 V pulses for the modular. Each jack has a mode: a clock, reset, run, or the notes of a sequencer track. Everything is saved in the box as soon as you click.",
     seq: "4 tracks that play over MIDI. 1) Pick a track. 2) Turn its MIDI on (green pill) and pick its channel. 3) Turn steps on with a click. 4) Draw notes, velocities… on the bars. The sequence is kept in the box and plays without a computer.",
@@ -54,6 +57,7 @@ const HELP = {
     sMidi: "A track's pill turns its MIDI on or off. Green = the track plays on the channel shown. “MIDI muted” = no MIDI (jacks in Track mode still follow it).",
     sMode: "Steps: you turn the steps on yourself. Euclidean: pick a number of hits and the box spreads them evenly over the length (3 over 8 = tresillo, 5 over 16 = bossa). Off: the track is silent.",
     sLow: "No note of the track goes below it: a lower note goes up an octave, staying in the scale. Default MIDI 48, the first C of a MS-20 with VCO1 at 32'. The offered notes and the bars start there.",
+    sGen: "At each new cycle of the track, the box reinvents this share of the notes, in the scale, above the lowest note and within the chosen range. 10 to 30 %: the melody evolves slowly. 100 %: everything changes every turn. Invented notes are not saved: your sequence comes back at the next power-up. “Keep these notes” saves the ones playing.",
     sChannel: "Your synth's MIDI channel (often 1). ALL sends the same note to all 16 channels. A step can have its own channel (“Channel” bars).",
     sScale: "The 91 scales of our Rhizome and Monades synths. Notes are always brought into the scale: no wrong notes. Microtonal scales (maqams, 19/24-TET…) send a pitch bend: set your synth to ±2 semitones.",
     sLength: "Number of steps in the track (1 to 32). Tracks of different lengths drift against each other: instant polyrhythms.",

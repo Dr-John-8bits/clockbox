@@ -30,6 +30,8 @@ const SEQ_T = {
     copyTo: "Copier cette piste vers", copyGo: "Copier", copied: "Piste {a} copiée vers la piste {b}",
     ccNum: "CC n°", ccOn: "Envoyer ce CC", ccOff: "Coche « Envoyer ce CC » pour que la boîte l'envoie.",
     tLow: "Note la plus basse",
+    gen: "Génératif", genAmount: "Notes changées à chaque cycle", genRange: "Étendue", genOct: ["1 octave", "2 octaves", "3 octaves"],
+    genRhythm: "Le rythme varie aussi", genKeep: "Garder ces notes", genKept: "Notes de la piste {n} enregistrées dans la boîte",
     sFill: "Tout allumer", sClear: "Tout éteindre", sCopyHalf: "Copier la 1re moitié sur la 2e",
     custom: "Gamme CUSTOM : clique les notes à garder",
     micro: "Gamme microtonale : la boîte envoie un pitch bend (règle ton synthé sur ±2 demi-tons).",
@@ -64,6 +66,8 @@ const SEQ_T = {
     copyTo: "Copy this track to", copyGo: "Copy", copied: "Track {a} copied to track {b}",
     ccNum: "CC #", ccOn: "Send this CC", ccOff: "Tick “Send this CC” so that the box sends it.",
     tLow: "Lowest note",
+    gen: "Generative", genAmount: "Notes changed each cycle", genRange: "Range", genOct: ["1 octave", "2 octaves", "3 octaves"],
+    genRhythm: "The rhythm varies too", genKeep: "Keep these notes", genKept: "Notes of track {n} saved in the box",
     sFill: "All on", sClear: "All off", sCopyHalf: "Copy the 1st half onto the 2nd",
     custom: "CUSTOM scale: click the notes to keep",
     micro: "Microtonal scale: the box sends a pitch bend (set your synth to ±2 semitones).",
@@ -93,6 +97,7 @@ const SEQ = {
   cc: null,              // [{num, on, vals[32]}] x4
   mute: 0, solo: 0,      // live masks
   low: [48, 48, 48, 48],  // lowest note of each track (firmware 2.7+)
+  gen: [0, 1, 2, 3].map(() => ({ amount: 0, range: 2, rhythm: 0 })),   // generative (firmware 2.8+)
   undo: [],
 };
 
@@ -186,6 +191,7 @@ function seqOnCC(d) {
   if (t > 3 || d.length < 35 || SEQ.timers["c" + t]) return;
   SEQ.cc[t] = { num: d[1], on: d[2], vals: d.slice(3, 35) };
   if (d.length >= 36 && !SEQ.timers["l" + t]) { SEQ.low[t] = d[35]; if (SEQ.tracks) SEQ.tracks[t].low = d[35]; SEQ.win[t] = null; }
+  if (d.length >= 39 && !SEQ.timers["g" + t]) SEQ.gen[t] = { amount: d[36], range: d[37], rhythm: d[38] };
   seqRenderSoon();
 }
 function seqOnPlayhead(d, now) {
@@ -229,7 +235,11 @@ function seqSendLow(t) {
 }
 
 // ------------------------------------------------------------------- undo --
-const seqState = () => JSON.stringify({ tracks: SEQ.tracks, steps: SEQ.steps, cc: SEQ.cc, custom: SEQ.custom });
+const seqState = () => JSON.stringify({ tracks: SEQ.tracks, steps: SEQ.steps, cc: SEQ.cc, custom: SEQ.custom, gen: SEQ.gen });
+function seqSendGen(t) {
+  clearTimeout(SEQ.timers["g" + t]);
+  SEQ.timers["g" + t] = setTimeout(() => { delete SEQ.timers["g" + t]; const g = SEQ.gen[t]; send(enc(0x20, t, g.amount, g.range, g.rhythm)); }, 200);
+}
 function pushUndo() {
   if (!SEQ.tracks) return;
   SEQ.undo.push(seqState());
@@ -248,6 +258,7 @@ function seqUndo() {
     if (p.cc[tr].num !== SEQ.cc[tr].num || p.cc[tr].on !== SEQ.cc[tr].on) { SEQ.cc[tr].num = p.cc[tr].num; SEQ.cc[tr].on = p.cc[tr].on; seqSendCCTrack(tr); }
     for (let s = 0; s < 32; s++) if (p.cc[tr].vals[s] !== SEQ.cc[tr].vals[s]) { SEQ.cc[tr].vals[s] = p.cc[tr].vals[s]; seqSendCCStep(tr, s); }
   }
+  if (p.gen) for (let tr = 0; tr < 4; tr++) if (JSON.stringify(p.gen[tr]) !== JSON.stringify(SEQ.gen[tr])) { SEQ.gen[tr] = p.gen[tr]; seqSendGen(tr); }
   if (p.custom !== SEQ.custom) { SEQ.custom = p.custom; send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); }
   SEQ.win = [null, null, null, null];
   seqRender();
@@ -259,6 +270,7 @@ async function seqSendAll() {   // after an import: everything, paced
   for (let t = 0; t < 4; t++) {
     SEQ.low[t] = SEQ.tracks[t].low != null ? SEQ.tracks[t].low : 48;
     await send(enc(0x1F, t, SEQ.low[t])); await sleep(12);
+    await send(enc(0x20, t, SEQ.gen[t].amount, SEQ.gen[t].range, SEQ.gen[t].rhythm)); await sleep(12);
     await send(enc(0x1E, t, SEQ.cc[t].num, SEQ.cc[t].on)); await sleep(12);
     for (let s = 0; s < 32; s++) { await send(enc(0x1D, t, s, SEQ.cc[t].vals[s])); await sleep(8); }
   }
@@ -371,6 +383,12 @@ function seqRender() {
     <div class="ov">${overview}</div>
     <div class="ed ${k.mode ? "" : "muted"}">
       ${head}
+      <div class="gen ${SEQ.gen[t0].amount ? "on" : ""}"><b>🌱 ${esc(t("gen"))}</b>${helpBtn("sGen")}
+        <label class="lab">${esc(t("genAmount"))} <input type="range" min="0" max="100" step="5" value="${SEQ.gen[t0].amount}" data-gen="amount"><output>${SEQ.gen[t0].amount} %</output></label>
+        <label class="lab">${esc(t("genRange"))} ${selHtml('data-gen="range"', t("genOct").map((o, i) => [i + 1, o]), SEQ.gen[t0].range)}</label>
+        ${k.mode === 1 ? `<label class="chk"><input type="checkbox" data-gen="rhythm" ${SEQ.gen[t0].rhythm ? "checked" : ""}> ${esc(t("genRhythm"))}</label>` : ""}
+        <button data-act="keep">📌 ${esc(t("genKeep"))}</button>
+      </div>
       <div class="steps32">${cells}</div>
       <p class="small">${esc(k.mode === 2 ? t("stepsHelpEu") : t("stepsHelp"))}</p>
       <div class="lanetabs">${laneTabs}</div>
@@ -524,10 +542,17 @@ function seqBind() {
         SEQ.steps[to] = SEQ.steps[t0].map(b => b.slice());
         SEQ.cc[to] = { num: SEQ.cc[t0].num, on: SEQ.cc[t0].on, vals: SEQ.cc[t0].vals.slice() };
         SEQ.low[to] = SEQ.tracks[to].low; seqSendLow(to);
+        SEQ.gen[to] = Object.assign({}, SEQ.gen[t0]); seqSendGen(to);
         seqSendTrack(to); seqSendCCTrack(to);
         for (let s = 0; s < 32; s++) { seqSendStep(to, s); seqSendCCStep(to, s); }
         log(tf("copied", { a: t0 + 1, b: to + 1 }));
         SEQ.sel = to; SEQ.win[to] = null; seqRender();
+        return;
+      }
+      if (d.act === "keep") {   // the notes the box reinvented become the saved ones
+        SEQ.undo.pop();
+        for (let s = 0; s < 32; s++) seqSendStep(t0, s);
+        log(tf("genKept", { n: t0 + 1 }));
         return;
       }
       if (d.act === "tosteps") {
@@ -566,7 +591,21 @@ function seqBind() {
   box.addEventListener("change", e => {
     const el = e.target;
     if (el.dataset.tk && el.tagName === "SELECT") setTrack(el.dataset.tk, +el.value);
+    if (el.dataset.gen === "amount") {
+      if (!SEQ.sliding) pushUndo();
+      SEQ.sliding = true;
+      SEQ.gen[SEQ.sel].amount = +el.value; el.nextElementSibling.textContent = el.value + " %";
+      seqSendGen(SEQ.sel);
+      return;
+    }
     if (el.dataset.tk && el.type === "range") { SEQ.sliding = false; seqRender(); }
+    if (el.dataset.gen) {
+      SEQ.sliding = false;
+      const g = SEQ.gen[SEQ.sel], key = el.dataset.gen;
+      if (key !== "amount") pushUndo();
+      g[key] = el.type === "checkbox" ? (el.checked ? 1 : 0) : +el.value;
+      seqSendGen(SEQ.sel); seqRender();
+    }
     if (el.dataset.low) {
       pushUndo();
       const t0 = SEQ.sel, v = +el.value;
@@ -637,6 +676,7 @@ function seqDemoTick(st, now) {
     if (k.direction === 2 && L > 1) { const p = count % (2 * L - 2); pos = p < L ? p : 2 * L - 2 - p; }
     if (k.direction === 3) pos = Math.floor(Math.random() * L);
     SEQ.heads[t] = pos; moved = true;
+    if (pos === 0 && count > 0 && SEQ.gen[t].amount) demoReinvent(t);
     const o = stepObj(SEQ.steps[t][pos]);
     const audible = !(SEQ.mute & (1 << t)) && (!SEQ.solo || (SEQ.solo & (1 << t)));
     if (audible && hitOf(t, pos) && Math.random() * 100 < k.prob && Math.random() < PROB_LEVELS[o.prob] / 100) {
@@ -645,6 +685,26 @@ function seqDemoTick(st, now) {
     }
   });
   if (moved) seqRenderHeads();
+}
+
+// The firmware's reinvent(), for the demo.
+function demoReinvent(t) {
+  const k = SEQ.tracks[t], g = SEQ.gen[t];
+  const base = Math.max(0, (k.low || 0) - (k.transpose - 24)), top = Math.min(127, base + 12 * g.range);
+  let walk = SEQ.steps[t][0][0] & 0x7F;
+  if (walk < base || walk > top) walk = Math.floor((base + top) / 2);
+  for (let s = 0; s < k.length; s++) {
+    const b = SEQ.steps[t][s];
+    if (Math.random() * 100 < g.amount) {
+      walk += Math.floor(Math.random() * 9) - 4;
+      if (walk < base) walk = 2 * base - walk;
+      if (walk > top) walk = 2 * top - walk;
+      walk = Math.max(base, walk);
+      b[0] = (b[0] & 0x80) | walk;
+      if (g.rhythm && k.mode === 1 && Math.random() < 0.5) b[0] ^= 0x80;
+    } else walk = b[0] & 0x7F;
+  }
+  if (t === SEQ.sel) seqRenderSoon();
 }
 
 // jacks in mode "Track n": lit while the track's note is recent

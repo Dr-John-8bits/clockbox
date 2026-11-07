@@ -18,6 +18,8 @@ Tout se règle aussi depuis **l'écran dans le navigateur** : https://dr-john-8b
 - **un flash long, puis des flashs courts** : ça tourne. Le flash long tombe sur le 1er temps de chaque mesure, les courts sur les autres temps ;
 - **un petit clignotement lent** (tous les 2 temps) : la boîte est **en pause** (voir plus bas).
 
+**Bloquer le tempo (pour un concert) :** sur l'écran, dans la carte « Transport et tempo », coche **« 🔒 Bloquer le tempo »**. Le potard ne change plus le tempo, et la boîte redémarre à ce tempo même après avoir été débranchée. Charger un préréglage remet son tempo, qui reste bloqué. Le tempo peut toujours être changé depuis l'écran. Un petit cadenas s'affiche à côté du tempo.
+
 **Côté MIDI :** l'horloge MIDI sort en permanence, même à l'arrêt, pour que tes machines connaissent déjà le tempo (c'est réglable). Juste avant chaque Start, la boîte envoie aussi la **position de départ** (« Song Position »), pour que les séquenceurs et les logiciels repartent bien du début.
 
 ### Pause et reprise (option)
@@ -173,6 +175,17 @@ Par défaut, la piste 1 joue sur le canal 1, la piste 2 sur le canal 2, la piste
   - **notes aléatoires** : la chance qu'un pas joue une autre note de la gamme, dans l'**étendue** choisie ;
   - **humanisation** : une petite variation de vélocité ;
   - **accent** : le premier coup de chaque tour est plus fort.
+
+### Le génératif : des mélodies qui évoluent toutes seules
+Chaque piste a un réglage **🌱 Génératif**, juste au-dessus de ses pas :
+- **Notes changées à chaque cycle** (0 à 100 %) : à chaque nouveau tour de la piste, la boîte réinvente ce pourcentage de notes.
+  - **0 %** : la piste rejoue toujours ses notes ;
+  - **10 à 30 %** : quelques notes changent à chaque tour, la mélodie évolue doucement en gardant son identité ;
+  - **100 %** : toute la mélodie est réinventée à chaque tour.
+- **Étendue** : 1, 2 ou 3 octaves au-dessus de la note la plus basse.
+- **Le rythme varie aussi** (en pas à pas) : des pas s'allument ou s'éteignent au hasard.
+
+Les notes inventées restent **dans la gamme**, jamais sous la note la plus basse, et avancent surtout par petits intervalles pour rester chantantes. Elles ne sont **pas enregistrées**, pour ne pas user la mémoire de la boîte : ta séquence écrite revient au prochain allumage. Si un tour te plaît, clique **« 📌 Garder ces notes »** pour l'enregistrer. Quand l'écran est connecté, il affiche les nouvelles notes au fil des tours.
 
 ### Les réglages d'un pas (les barres)
 - **Note** : seules les notes de la gamme sont possibles.

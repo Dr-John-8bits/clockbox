@@ -33,7 +33,7 @@ Pins can be changed at the top of `clockbox.ino`.
 
 ## Use
 
-- **Pot**: tempo, 30 to 240 BPM, in 1 BPM steps (filtered, so it does not wobble).
+- **Pot**: tempo, 30 to 240 BPM, in 1 BPM steps (filtered, so it does not wobble). The tempo can be **locked** from the screen: the pot is then ignored and the box starts at the locked tempo.
 - **Button while running**: stop, immediately (or pause, if "button pauses" is on).
 - **Button while paused**: short press = continue, hold 1.5 s = back to the start.
 - **Button while stopped**: short press = start (on release). Hold 1.5 s = settings menu.
@@ -66,7 +66,7 @@ Defaults: jack 1 (top) = 1/16, jack 2 (middle) = Reset, jack 3 (bottom) = 1/8.
 
 ### Sequencer
 
-4 tracks of up to 32 steps, each in step mode or Euclidean mode (hits and rotation over the length), with its own step length (1/16, 1/8, 1/16 triplet, 1/4, 1/32), direction (forward, backward, ping-pong, random), MIDI channel (1-16 or ALL), scale and root, lowest note (default MIDI 48; lower notes go up by octaves), transpose, track probability, random notes within a range, humanize and accent. Each step has a note, a velocity, its own MIDI channel (or the track's), a probability, 1 to 4 substeps (ratchets), a note length, a random-note flag and a CC value (each track sends one CC number of its choice, on its channel, when the value changes). Tracks can be muted or soloed live from the screen (not saved).
+4 tracks of up to 32 steps, each in step mode or Euclidean mode (hits and rotation over the length), with its own step length (1/16, 1/8, 1/16 triplet, 1/4, 1/32), direction (forward, backward, ping-pong, random), MIDI channel (1-16 or ALL), scale and root, lowest note (default MIDI 48; lower notes go up by octaves), transpose, track probability, random notes within a range, humanize and accent. Each step has a note, a velocity, its own MIDI channel (or the track's), a probability, 1 to 4 substeps (ratchets), a note length, a random-note flag and a CC value (each track sends one CC number of its choice, on its channel, when the value changes). Tracks can be muted or soloed live from the screen (not saved). A **generative** setting per track reinvents a share of the notes (0-100 %) at each new cycle, in the scale, within 1-3 octaves above the lowest note, optionally varying the rhythm too; invented notes live in RAM only (a screen button keeps them).
 
 The 91 scales come from our FM-1 synths Rhizome and Monades (`tools/import_scales.py` converts their `scale_table.inc` into `scales.h` and `site/scales.js`). Notes are always quantized to the scale; ragas use their ascending or descending form; microtonal scales send a pitch bend (±2 semitones) before each note. The sequence lives in EEPROM (one sequence; export/import as JSON from the page), and plays without a computer.
 
@@ -98,7 +98,8 @@ Boîtier d'horloge pour instruments électroniques : sortie MIDI, 3 jacks clock/
 - **Potard** : tempo de 30 à 240 BPM.
 - **Bouton** : en marche, un appui arrête (ou met en pause, en option). À l'arrêt, un appui court lance (au relâchement) ; tenir 1,5 s ouvre le menu.
 - **Jacks** : horloges, triolets, croche pointée, division libre, reset, run ou pistes du séquenceur, avec par jack une probabilité, une impulsion trigger ou gate et un décalage. Jack 1 = haut, jack 2 = milieu, jack 3 = bas. Par défaut : haut = 1/16, milieu = reset, bas = 1/8.
-- **Séquenceur MIDI 4 pistes** : pas à pas ou euclidien, 91 gammes (celles de nos synthés Rhizome et Monades), aléatoire, probabilité, sous-pas, un canal par pas, un CC par pas, mute et solo en live, invention de notes ou de rythmes, annulation.
+- **Séquenceur MIDI 4 pistes** : pas à pas ou euclidien, 91 gammes (celles de nos synthés Rhizome et Monades), aléatoire, probabilité, sous-pas, un canal par pas, un CC par pas, mute et solo en live, invention de notes ou de rythmes, mode génératif (les notes évoluent à chaque cycle), annulation.
+- **Tempo bloqué** pour les concerts : le potard ne change plus le tempo, gardé même débranché.
 - **MIDI** : horloge, position de départ, pause et reprise, métronome en notes MIDI, mesures 4/4, 3/4, 2/4, 5/4, 6/8, 7/8.
 - **4 préréglages** (avec leur tempo), rappelables depuis l'écran ou depuis le menu de la boîte, et **export/import** des réglages en fichier.
 - **Écran dans le navigateur** : ouvre **https://dr-john-8bits.github.io/clockbox/** dans Chrome, clique « Connecter la boîte ». Tout s'affiche en direct, tout se règle à la souris, et le firmware se met à jour en un clic.

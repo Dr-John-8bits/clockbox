@@ -15,7 +15,7 @@
  * Target: Arduino Nano / Uno (ATmega328P).
  *
  * Controls
- *   Pot ............ tempo, 30 to 240 BPM
+ *   Pot ............ tempo, 30 to 240 BPM (unless the tempo is locked from the screen)
  *   Button, running  stop, or pause if "button pauses" is on (on press)
  *   Button, paused   short press = continue, hold 1.5 s = back to the start
  *   Button, stopped  short press = start (on release), hold 1.5 s = settings menu
@@ -174,6 +174,10 @@ const uint16_t EEPROM_TRACKS = 176, EEPROM_CUSTOM = 240, EEPROM_STEPS = 512;
 const uint16_t EEPROM_CC_MAGIC = 243, EEPROM_CC_TRACK = 244, EEPROM_CC_STEPS = 256;
 const uint8_t  CC_MAGIC = 0xCC, DEFAULT_CC = 74;   // 74 = filter cutoff on many synths
 const uint16_t EEPROM_LOW_MAGIC = 242, EEPROM_LOW = 252;
+const uint16_t EEPROM_GEN_MAGIC = 384, EEPROM_GEN = 385;   // 4 x (amount, range, rhythm)
+const uint8_t  GEN_MAGIC = 0xB6;
+const uint16_t EEPROM_LOCK = 397, EEPROM_LOCK_BPM = 398;   // tempo lock: LOCK_MAGIC = on, then the tempo in 0.1 BPM
+const uint8_t  LOCK_MAGIC = 0xB7;
 // LOW_MAGIC is above 127 on purpose: byte 242 held a 7-bit preset value in the 2.4 layout.
 const uint8_t  LOW_MAGIC = 0xB4, DEFAULT_LOW = 48;  // 48 = first C of a MS-20 with VCO1 at 32'
 // firmware 2.4 (EEPROM version 5), for the migration
@@ -199,6 +203,9 @@ const uint16_t V5_PRESET_STRIDE = 56;
 //     1D t s value            CC value of a step
 //     1E t number on          CC number of a track, and 1 = send it
 //     1F t note               lowest note of a track (notes below go up by octaves)
+//     21 on                   tempo lock: 1 = the pot no longer changes the tempo (kept at power-up)
+//     20 t amount range rhythm   generative: % of notes reinvented at each new cycle,
+//                             range in octaves (1-3), 1 = the rhythm varies too (steps mode)
 //   box -> computer
 //     01 <state>              see sendState()
 //     02 <config> presetMask  current settings, and which preset slots are filled
@@ -206,10 +213,12 @@ const uint16_t V5_PRESET_STRIDE = 56;
 //     04 t s <step, 5 bytes>  a step
 //     05 p0 p1 p2 p3 mask     playheads (7F = silent) and which tracks played a note
 //     06 lo hi                custom scale mask
-//     07 t number on <32> low CC of a track: number, on, value of each step; then its lowest note
+//     07 t number on <32> low amount range rhythm
+//                             CC of a track (number, on, value of each step), its lowest note, its generative settings
+//   Steps reinvented by the generative mode are sent as 04 messages while a screen is connected.
 //   (05 also carries the mute and solo masks after the played mask)
 // The MIDI clock itself (F8 / FA / FB / FC / F2) is on the same line.
-const uint8_t FW_VERSION_MAJOR = 2, FW_VERSION_MINOR = 7;
+const uint8_t FW_VERSION_MAJOR = 2, FW_VERSION_MINOR = 8;
 const uint8_t SYSEX_ID = 0x7D, SYSEX_C = 'C', SYSEX_B = 'B';
 const uint8_t CMD_STATE = 0x01, CMD_CONFIG = 0x02, CMD_TRACK = 0x03, CMD_STEP = 0x04,
               CMD_PLAYHEAD = 0x05, CMD_CUSTOM = 0x06,
@@ -217,7 +226,7 @@ const uint8_t CMD_STATE = 0x01, CMD_CONFIG = 0x02, CMD_TRACK = 0x03, CMD_STEP = 
               CMD_SET_CONFIG = 0x14, CMD_SET_TEMPO = 0x15, CMD_TRANSPORT = 0x16, CMD_PRESET = 0x17,
               CMD_SET_STEP = 0x18, CMD_SET_TRACK = 0x19, CMD_DUMP = 0x1A, CMD_SET_CUSTOM = 0x1B,
               CMD_MUTE = 0x1C, CMD_SET_CC_STEP = 0x1D, CMD_SET_CC_TRACK = 0x1E, CMD_CC = 0x07,
-              CMD_SET_LOW = 0x1F;
+              CMD_SET_LOW = 0x1F, CMD_SET_GEN = 0x20, CMD_SET_LOCK = 0x21;
 const uint32_t IDENTIFY_MS = 15000;
 const uint16_t REPORT_MIN_INTERVAL_MS = 30;
 const uint8_t  REPORT_POT_STEP = 3;
@@ -269,6 +278,9 @@ uint8_t           ccNumber[TRACK_COUNT], ccOn[TRACK_COUNT];   // a CC sent on ev
 uint8_t           ccValue[TRACK_COUNT][MAX_STEPS];
 uint8_t           ccLast[TRACK_COUNT];                       // last value sent, 0xFF = none
 uint8_t           lowNote[TRACK_COUNT];                      // no note below this one (octaves up)
+uint8_t           genAmount[TRACK_COUNT], genRange[TRACK_COUNT], genRhythm[TRACK_COUNT];
+volatile uint8_t  genDirty = 0;                              // tracks reinvented, to show on the screen
+bool              tempoLock = false;                         // the pot does not change the tempo
 volatile uint8_t  muteMask = 0, soloMask = 0;               // live, not saved
 TrackRun          runs[TRACK_COUNT];
 volatile uint8_t  transport = STOPPED;
@@ -493,11 +505,41 @@ static uint8_t cycleLength(const Track &k) {
 }
 
 // Decide what a step plays: called on its first tick.
+// Generative mode: at each new cycle, reinvent a share of the notes (in RAM only:
+// the EEPROM would wear out). A walk by small intervals from the lowest note,
+// quantized to the scale when played.
+static void reinvent(uint8_t t) {
+  const Track &k = tracks[t];
+  int16_t base = (int16_t)lowNote[t] - ((int16_t)k.transpose - 24);
+  int16_t top = base + 12 * genRange[t];
+  if (base < 0) base = 0;
+  if (top > 127) top = 127;
+  int16_t walk = steps[t][0][0] & 0x7F;
+  if (walk < base || walk > top) walk = base + (top - base) / 2;
+  for (uint8_t s = 0; s < k.length; s++) {
+    uint8_t *b = steps[t][s];
+    if (chance(genAmount[t])) {
+      walk += (int16_t)(rnd() % 9) - 4;
+      if (walk < base) walk = 2 * base - walk;
+      if (walk > top) walk = 2 * top - walk;
+      if (walk < base) walk = base;
+      b[0] = (b[0] & STEP_ON) | (uint8_t)walk;
+      if (genRhythm[t] && k.mode == TRACK_STEPS && (rnd() & 1)) b[0] ^= STEP_ON;
+    } else {
+      walk = b[0] & 0x7F;
+    }
+  }
+  genDirty |= 1 << t;
+}
+
 static void beginStep(uint8_t t) {
   const Track &k = tracks[t];
   TrackRun &r = runs[t];
   trackNoteOff(t);
-  if (r.count % cycleLength(k) == 0) r.fresh = true;
+  if (r.count % cycleLength(k) == 0) {
+    r.fresh = true;
+    if (r.count && genAmount[t]) reinvent(t);   // a new cycle (not the very first)
+  }
   r.pos = stepPosition(k, r.count);
   const uint8_t *s = steps[t][r.pos];
   bool on = k.mode == TRACK_STEPS ? (s[0] & STEP_ON) : euclidHit(k.length, k.hits, k.rotation, r.pos);
@@ -649,6 +691,11 @@ void onClockTick(uint32_t tick) {
 static void applyTempo(float newBpm) {
   bpm = newBpm;
   markDirty();
+  if (tempoLock) {   // a locked tempo comes back at power-up
+    uint16_t b10 = (uint16_t)(bpm * 10 + 0.5);
+    EEPROM.update(EEPROM_LOCK_BPM, b10 & 0xFF);
+    EEPROM.update(EEPROM_LOCK_BPM + 1, b10 >> 8);
+  }
   uClock.setTempo(bpm);
   // uClock reprograms Timer1 without touching its counter. If the counter is
   // already past the new compare value (tempo went up), it would run up to
@@ -732,6 +779,26 @@ static void saveCC(uint8_t t) {
   EEPROM.update(EEPROM_CC_TRACK + t * 2, ccNumber[t]);
   EEPROM.update(EEPROM_CC_TRACK + t * 2 + 1, ccOn[t]);
   for (uint8_t s = 0; s < MAX_STEPS; s++) EEPROM.update(EEPROM_CC_STEPS + t * MAX_STEPS + s, ccValue[t][s]);
+}
+
+static void saveGen(uint8_t t) {
+  EEPROM.update(EEPROM_GEN_MAGIC, GEN_MAGIC);
+  EEPROM.update(EEPROM_GEN + t * 3, genAmount[t]);
+  EEPROM.update(EEPROM_GEN + t * 3 + 1, genRange[t]);
+  EEPROM.update(EEPROM_GEN + t * 3 + 2, genRhythm[t]);
+}
+
+static void loadGen() {
+  bool ok = EEPROM.read(EEPROM_GEN_MAGIC) == GEN_MAGIC;
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) {
+    genAmount[t] = ok ? EEPROM.read(EEPROM_GEN + t * 3) : 0;
+    genRange[t] = ok ? EEPROM.read(EEPROM_GEN + t * 3 + 1) : 2;
+    genRhythm[t] = ok ? EEPROM.read(EEPROM_GEN + t * 3 + 2) : 0;
+    if (genAmount[t] > 100) genAmount[t] = 0;
+    if (genRange[t] < 1 || genRange[t] > 3) genRange[t] = 2;
+    genRhythm[t] &= 1;
+    if (!ok) saveGen(t);
+  }
 }
 
 static void loadLow() {
@@ -915,6 +982,7 @@ static void loadSettings() {
 
   loadCC();
   loadLow();
+  loadGen();
 
   uint8_t seen = 0;   // positions must be a permutation of 0..JACK_COUNT-1
   for (uint8_t j = 0; j < JACK_COUNT; j++) {
@@ -1039,6 +1107,7 @@ static void sendState() {
     jackPosition[0], jackPosition[1], jackPosition[2],
     (uint8_t)(pos16 >> 7), (uint8_t)(pos16 & 0x7F),
     cfg.jackMode[0], cfg.jackMode[1], cfg.jackMode[2],
+    tempoLock,
     0xF7
   };
   if (!sendSysex(msg, sizeof(msg))) return;
@@ -1082,12 +1151,15 @@ static bool sendCustom() {
 }
 
 static bool sendCC(uint8_t t) {
-  uint8_t msg[8 + MAX_STEPS + 2];
+  uint8_t msg[8 + MAX_STEPS + 5];
   msg[0] = 0xF0; msg[1] = SYSEX_ID; msg[2] = SYSEX_C; msg[3] = SYSEX_B; msg[4] = CMD_CC;
   msg[5] = t; msg[6] = ccNumber[t]; msg[7] = ccOn[t];
   memcpy(msg + 8, ccValue[t], MAX_STEPS);
   msg[8 + MAX_STEPS] = lowNote[t];
-  msg[9 + MAX_STEPS] = 0xF7;
+  msg[9 + MAX_STEPS] = genAmount[t];
+  msg[10 + MAX_STEPS] = genRange[t];
+  msg[11 + MAX_STEPS] = genRhythm[t];
+  msg[12 + MAX_STEPS] = 0xF7;
   return sendSysex(msg, sizeof(msg));
 }
 
@@ -1221,6 +1293,21 @@ static void handleCommand() {
         EEPROM.update(EEPROM_CC_TRACK + d[0] * 2 + 1, ccOn[d[0]]);
       }
       break;
+    case CMD_SET_LOCK:
+      if (n >= 1) {
+        tempoLock = d[0] & 1;
+        EEPROM.update(EEPROM_LOCK, tempoLock ? LOCK_MAGIC : 0);
+        if (tempoLock) applyTempo(bpm);   // saves the current tempo
+        else { tempoArmed = false; potRef = potValue; }   // unlocked: the pot takes over once moved
+        markDirty();
+      }
+      break;
+    case CMD_SET_GEN:
+      if (n >= 4 && d[0] < TRACK_COUNT && d[1] <= 100 && d[2] >= 1 && d[2] <= 3) {
+        genAmount[d[0]] = d[1]; genRange[d[0]] = d[2]; genRhythm[d[0]] = d[3] & 1;
+        saveGen(d[0]);
+      }
+      break;
     case CMD_SET_LOW:
       if (n >= 2 && d[0] < TRACK_COUNT) {
         lowNote[d[0]] = d[1] & 0x7F;
@@ -1273,6 +1360,17 @@ static void updateScreenLink() {
 
   if (!reporting) return;
   if (dumpIndex >= 0) continueDump();
+  // steps reinvented by the generative mode: show them on the screen, one track at a time
+  static int8_t genTrack = -1;
+  static uint8_t genStep = 0;
+  if (genTrack < 0 && genDirty && dumpIndex < 0) {
+    for (uint8_t t = 0; t < TRACK_COUNT; t++) if (genDirty & (1 << t)) { genTrack = t; break; }
+    noInterrupts(); genDirty &= ~(1 << genTrack); interrupts();
+    genStep = 0;
+  }
+  while (genTrack >= 0 && sendStep(genTrack, genStep)) {
+    if (++genStep >= tracks[genTrack].length) genTrack = -1;
+  }
   if (playheadDirty) sendPlayheads();
   if (potDistance(potValue, lastReportedPot) >= REPORT_POT_STEP) markDirty();
   if (millis() - lastReportAt < REPORT_MIN_INTERVAL_MS) return;
@@ -1421,6 +1519,11 @@ void setup() {
   potFiltered = (uint32_t)analogRead(POT_PIN) << 4;
   potValue = potFiltered >> 4;
   bpm = (float)(int)(potToBpm(potValue) + 0.5);
+  tempoLock = EEPROM.read(EEPROM_LOCK) == LOCK_MAGIC;
+  if (tempoLock) {
+    uint16_t b10 = EEPROM.read(EEPROM_LOCK_BPM) | ((uint16_t)EEPROM.read(EEPROM_LOCK_BPM + 1) << 8);
+    if (b10 >= BPM10_MIN && b10 <= BPM10_MAX) bpm = b10 / 10.0;
+  }
 
   uClock.init();
   uClock.setOutputPPQN(uClock.PPQN_96);
@@ -1443,7 +1546,7 @@ void loop() {
     tempoArmed = true;
     markDirty();
   }
-  if (tempoArmed) {
+  if (tempoArmed && !tempoLock) {
     float target = potToBpm(potValue);
     if (fabs(target - bpm) >= BPM_HYSTERESIS) {
       float rounded = (float)(int)(target + 0.5);

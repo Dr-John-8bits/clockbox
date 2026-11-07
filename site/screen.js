@@ -21,6 +21,7 @@ const T = {
     transportTitle: "Transport et tempo",
     tStart: "▶ Start", tStop: "■ Stop", tPause: "❚❚ Pause", tContinue: "▶ Reprendre", tRewind: "⏮ Début",
     tempoLabel: "Tempo (BPM)", tempoSet: "Appliquer", tap: "Tap",
+    tempoLock: "🔒 Bloquer le tempo (le potard ne le change plus)",
     tempoHelp: "Tape un tempo précis (au dixième) ou tape le rythme sur « Tap ». Le potard reprend la main dès que tu le bouges.",
     jacksTitle: "Les 3 jacks",
     jacksHelp: "Clique un mode : il est envoyé à la boîte et enregistré tout de suite. « Identifier » fait battre ce jack seul pendant 15 s, pour savoir lequel est lequel.",
@@ -85,6 +86,7 @@ const T = {
     transportTitle: "Transport and tempo",
     tStart: "▶ Start", tStop: "■ Stop", tPause: "❚❚ Pause", tContinue: "▶ Continue", tRewind: "⏮ To start",
     tempoLabel: "Tempo (BPM)", tempoSet: "Apply", tap: "Tap",
+    tempoLock: "🔒 Lock the tempo (the pot no longer changes it)",
     tempoHelp: "Type an exact tempo (to 0.1) or tap the beat on “Tap”. The pot takes over as soon as you move it.",
     jacksTitle: "The 3 jacks",
     jacksHelp: "Click a mode: it is sent to the box and saved right away. “Identify” makes only this jack pulse for 15 s, to find which is which.",
@@ -184,7 +186,7 @@ function decodeState(d) {
   return { fw: d[0] + "." + d[1], fwNum: d[0] * 10 + d[1], bpm: ((d[2] << 7) | d[3]) / 10, transport: d[4], menu: !!d[5],
     menuPage: d[6], menuPreset: d[7], pot: (d[8] << 7) | d[9], button: !!d[10], press: d[11], tempoArmed: !!d[12],
     menuArmed: !!d[13], ident: d[14] === 0x7F ? -1 : d[14], pos: [d[15], d[16], d[17]], pos16: (d[18] << 7) | d[19],
-    modes: [d[20], d[21], d[22]] };
+    modes: [d[20], d[21], d[22]], lock: !!d[23] };
 }
 
 function decodeConfig(d) {
@@ -526,8 +528,8 @@ function stopDemo() {
 }
 function demoPush() {
   const D = demo.D, b10 = Math.round(D.bpm * 10), p16 = Math.floor(Math.max(0, clock.songTick) / 6);
-  onState([2, 5, b10 >> 7, b10 & 0x7F, D.transport, +D.menu, D.menuPage, D.menuPreset, D.pot >> 7, D.pot & 0x7F,
-    +D.button, D.press, +D.tempoArmed, +D.menuArmed, D.ident < 0 ? 0x7F : D.ident, ...D.pos, p16 >> 7, p16 & 0x7F, ...D.modes]);
+  onState([2, 8, b10 >> 7, b10 & 0x7F, D.transport, +D.menu, D.menuPage, D.menuPreset, D.pot >> 7, D.pot & 0x7F,
+    +D.button, D.press, +D.tempoArmed, +D.menuArmed, D.ident < 0 ? 0x7F : D.ident, ...D.pos, p16 >> 7, p16 & 0x7F, ...D.modes, +!!D.lock]);
   const mask = demo.presets.reduce((m, p, i) => m | (p ? 1 << i : 0), 0);
   configTimer = null;
   onConfig([...encodeConfig(demo.C), mask]);
@@ -551,7 +553,8 @@ function demoCommand(bytes) {
   }
   if (c === 0x13) D.pos = [d[0], d[1], d[2]];
   if (c === 0x14) { const n = decodeConfig([...d, 0]); demo.C = n; D.modes = n.jackMode.slice(); }
-  if (c >= 0x18 && c <= 0x1F) return;   // sequence edits: the page already holds them
+  if (c === 0x21) D.lock = !!d[0];
+  if (c >= 0x18 && c <= 0x20) return;   // sequence edits: the page already holds them
   if (c === 0x15) { D.bpm = ((d[0] << 7) | d[1]) / 10; D.tempoArmed = false; }
   if (c === 0x16) return demoTransport(d[0]);
   if (c === 0x17) {
@@ -655,7 +658,7 @@ function renderLcd(now) {
     .map(([p, j]) => `${esc(t("places")[p][0])}:${esc(T[lang].modeShort[S.modes[j]])}`).join(" ") : "";
   const label = tr === PLAYING ? "▶ " + t("playing") : tr === PAUSED ? "❚❚ " + t("paused") : "■ " + t("stopped");
   lcd.innerHTML = `<div class="row"><b>${label}</b><span>${C ? TIME_SIGS[ts] + " · " : ""}${S ? "fw " + S.fw : ""}</span></div>
-    <div class="row" style="align-items:flex-end"><div class="bpm">${bpm == null ? "---" : fmtBpm(S ? bpm : Math.round(bpm * 10) / 10)}<small>BPM</small></div>
+    <div class="row" style="align-items:flex-end"><div class="bpm">${bpm == null ? "---" : fmtBpm(S ? bpm : Math.round(bpm * 10) / 10)}<small>BPM${S && S.lock ? " 🔒" : ""}</small></div>
       <div style="text-align:right"><div class="beats">${dots}</div><div class="dim">${tr !== STOPPED ? `${t("bar")} ${bar}` : "&nbsp;"}</div></div></div>
     ${held ? `<div class="bar"><i style="width:${Math.min(100, (now - pressSince) / LONG_PRESS_MS * 100)}%"></i></div><div class="row dim"><span>${esc(t(S.press === PRESS_PAUSED ? "holdPaused" : "holdStart"))}</span></div>`
            : `<div class="row dim"><span>${jacks}</span></div>`}`;
@@ -691,7 +694,7 @@ function frame() {
   document.querySelectorAll(".din").forEach(d => d.classList.toggle("act", !!flowing && (clock.freeTick % 24 < 3 || noteFlash)));
 
   $("knob").style.transform = `rotate(${-135 + (S ? S.pot : 0) / 1023 * 270}deg)`;
-  const needTurn = S && ((S.menu && !S.menuArmed) || (!S.menu && !S.tempoArmed));
+  const needTurn = S && ((S.menu && !S.menuArmed) || (!S.menu && !S.tempoArmed && !S.lock));
   $("potHint").textContent = needTurn ? "↻ " + t("turnPotShort") : "";
   $("btn").classList.toggle("down", !!(S && S.button));
   const holding = S && S.button && [PRESS_STOPPED, PRESS_MENU, PRESS_PAUSED].includes(S.press);
@@ -738,6 +741,8 @@ function renderPanel() {
   const tw = $("transportBtns"); tw.innerHTML = "";
   for (const [k, fn, en] of tb) { const b = document.createElement("button"); b.textContent = t(k); b.disabled = !en; b.onclick = fn; tw.appendChild(b); }
   $("tempoInput").disabled = $("tempoSet").disabled = $("tap").disabled = !v22;
+  $("tempoLock").disabled = !(live && S.fwNum >= 28);
+  $("tempoLock").checked = !!(S && S.lock);
 
   // jacks
   const canIdent = live && tr !== PLAYING && !S.menu;
@@ -838,7 +843,7 @@ function exportSettings() {
   if (!C || !S) return;
   const { presetMask, ...config } = C;
   const data = { app: "clockbox", format: 2, firmware: S.fw, tempo: S.bpm, positions: S.pos, config,
-    sequence: SEQ.tracks ? { tracks: SEQ.tracks, steps: SEQ.steps, custom: SEQ.custom, cc: SEQ.cc } : undefined };
+    sequence: SEQ.tracks ? { tracks: SEQ.tracks, steps: SEQ.steps, custom: SEQ.custom, cc: SEQ.cc, gen: SEQ.gen } : undefined };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -865,7 +870,8 @@ function checkSequence(q) {
   });
   const cc = Array.isArray(q.cc) && q.cc.length === 4 ? q.cc.map(c => ({ num: int(c.num, 0, 127), on: int(c.on, 0, 1),
     vals: (Array.isArray(c.vals) && c.vals.length === 32 ? c.vals : Array(32).fill(64)).map(v => int(v, 0, 127)) })) : null;
-  return { tracks, steps, custom: q.custom == null ? 0xFFF : int(q.custom, 1, 0xFFF), cc };
+  const gen = Array.isArray(q.gen) && q.gen.length === 4 ? q.gen.map(g => ({ amount: int(g.amount, 0, 100), range: int(g.range, 1, 3), rhythm: int(g.rhythm, 0, 1) })) : null;
+  return { tracks, steps, custom: q.custom == null ? 0xFFF : int(q.custom, 1, 0xFFF), cc, gen };
 }
 
 function checkConfig(src) {
@@ -892,7 +898,7 @@ async function importSettings(file) {
     const q = data.sequence ? checkSequence(data.sequence) : null;
     if (S && S.fwNum < 25) throw new Error(t("seqOld"));
     await send(enc(0x14, ...encodeConfig(c)));
-    if (q) { pushUndo(); SEQ.tracks = q.tracks; SEQ.steps = q.steps; SEQ.custom = q.custom; if (q.cc) SEQ.cc = q.cc; seqRender(); await seqSendAll(); }
+    if (q) { pushUndo(); SEQ.tracks = q.tracks; SEQ.steps = q.steps; SEQ.custom = q.custom; if (q.cc) SEQ.cc = q.cc; if (q.gen) SEQ.gen = q.gen; seqRender(); await seqSendAll(); }
     const pos = data.positions;
     if (Array.isArray(pos) && pos.length === 3 && [...pos].sort().join() === "0,1,2") await send(enc(0x13, ...pos));
     if (typeof data.tempo === "number" && data.tempo >= 20 && data.tempo <= 300) sendTempo(data.tempo);
@@ -943,6 +949,7 @@ function sendTempo(bpm) {
   const b10 = Math.round(Math.max(20, Math.min(300, bpm)) * 10);
   send(enc(0x15, b10 >> 7, b10 & 0x7F));
 }
+$("tempoLock").addEventListener("change", e => { send(enc(0x21, e.target.checked ? 1 : 0)); log(e.target.checked ? "tempo bloqué" : "tempo débloqué"); });
 $("tempoSet").addEventListener("click", () => { const v = parseFloat($("tempoInput").value.replace(",", ".")); if (v) sendTempo(v); });
 $("tempoInput").addEventListener("keydown", e => { if (e.key === "Enter") $("tempoSet").click(); });
 const taps = [];
