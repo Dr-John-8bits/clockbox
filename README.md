@@ -6,8 +6,8 @@ Arduino based clock generator for musical electronic instruments with MIDI and a
 Let's watch a nice little video about what it does : https://youtu.be/OYtPbgozCbE
 
 Original project by Alexis Zbik (2020). Version 2 (2026) adds, with no hardware change:
-- one mode per jack: clocks, triplets, dotted 8th, **free divisions** (1 every N sixteenths), reset, run, and **Euclidean rhythms**, with a **probability**, a **trigger or gate** pulse and an **offset** per jack;
-- Euclidean rhythms and a **metronome as MIDI notes**, to drive a drum machine;
+- one mode per jack: clocks, triplets, dotted 8th, **free divisions** (1 every N sixteenths), reset, run, and the **sequencer tracks**, with a **probability**, a **trigger or gate** pulse and an **offset** per jack;
+- a **4-track MIDI sequencer** (32 steps, step or Euclidean, the 91 scales of our FM-1 synths Rhizome and Monades including microtonal ones, randomness, probability, substeps, a MIDI channel per step or ALL, accent, humanize) and a **MIDI metronome**;
 - **time signatures**, **Song Position**, **pause/continue**, optional MIDI clock while stopped;
 - **4 presets** (with their tempo), settings **export/import** as a file, a beat LED, a steadier tempo, a settings menu on the box;
 - a **screen in the browser** over USB (Chrome/Edge), with every setting, tap tempo and **one-click firmware updates**.
@@ -38,7 +38,7 @@ Pins can be changed at the top of `clockbox.ino`.
 - **Button while paused**: short press = continue, hold 1.5 s = back to the start.
 - **Button while stopped**: short press = start (on release). Hold 1.5 s = settings menu.
 - **LED**: running = long flash on beat 1, short flash on the other beats. Paused = short blink every 2 beats. Stopped = off.
-- **MIDI**: clock (24 PPQN), Start / Stop / Continue, Song Position before Start and Continue, Euclidean notes and metronome.
+- **MIDI**: clock (24 PPQN), Start / Stop / Continue, Song Position before Start and Continue, sequencer notes and metronome.
 
 ### Jack modes
 
@@ -58,15 +58,17 @@ In pot order in the menu:
 | Free division | 1 pulse every N sixteenths (N = 1-64, per jack): polyrhythms |
 | Reset | 10 ms trigger on start, just before the first clock |
 | Run | High while running |
-| Euclid A, B, C | Euclidean rhythm A, B or C |
+| Track 1-4 | A pulse for each note played by that sequencer track |
 
 Clock modes have a 50 % duty cycle. On start, all clocks go high together with the MIDI Start.
 Per jack: a probability (0-100 %, default 100) that each pulse is sent, a pulse length (gate at 50 %, or a short trigger of one tick, about 5 ms at 120 BPM), and an offset of 0 to 15 sixteenths (clocks, bar and free division; Euclidean rhythms use their rotation). Reset and Run are never random.
 Defaults: jack 1 (top) = 1/16, jack 2 (middle) = Reset, jack 3 (bottom) = 1/8.
 
-### Euclidean rhythms
+### Sequencer
 
-Three rhythms (A, B, C), each with steps (1-32), hits, rotation, step length (1/16, 1/8, 1/16 triplet, 1/4) and a probability (0-100 %) for each hit to play. Each one can drive a jack (mode Euclid A/B/C) and/or play a MIDI note (channel, note, velocity). They are set from the screen and saved in the box.
+4 tracks of up to 32 steps, each in step mode or Euclidean mode (hits and rotation over the length), with its own step length (1/16, 1/8, 1/16 triplet, 1/4, 1/32), direction (forward, backward, ping-pong, random), MIDI channel (1-16 or ALL), scale and root, transpose, track probability, random notes within a range, humanize and accent. Each step has a note, a velocity, its own MIDI channel (or the track's), a probability, 1 to 4 substeps (ratchets), a note length and a random-note flag.
+
+The 91 scales come from our FM-1 synths Rhizome and Monades (`tools/import_scales.py` converts their `scale_table.inc` into `scales.h` and `site/scales.js`). Notes are always quantized to the scale; ragas use their ascending or descending form; microtonal scales send a pitch bend (±2 semitones) before each note. The sequence lives in EEPROM (one sequence; export/import as JSON from the page), and plays without a computer.
 
 ### Settings menu
 
@@ -95,8 +97,9 @@ Boîtier d'horloge pour instruments électroniques : sortie MIDI, 3 jacks clock/
 
 - **Potard** : tempo de 30 à 240 BPM.
 - **Bouton** : en marche, un appui arrête (ou met en pause, en option). À l'arrêt, un appui court lance (au relâchement) ; tenir 1,5 s ouvre le menu.
-- **Jacks** : horloges, triolets, croche pointée, division libre, reset, run ou rythmes euclidiens, avec par jack une probabilité, une impulsion trigger ou gate et un décalage. Jack 1 = haut, jack 2 = milieu, jack 3 = bas. Par défaut : haut = 1/16, milieu = reset, bas = 1/8.
-- **MIDI** : horloge, position de départ, pause et reprise, rythmes euclidiens (avec probabilité) et métronome en notes MIDI, mesures 4/4, 3/4, 2/4, 5/4, 6/8, 7/8.
+- **Jacks** : horloges, triolets, croche pointée, division libre, reset, run ou pistes du séquenceur, avec par jack une probabilité, une impulsion trigger ou gate et un décalage. Jack 1 = haut, jack 2 = milieu, jack 3 = bas. Par défaut : haut = 1/16, milieu = reset, bas = 1/8.
+- **Séquenceur MIDI 4 pistes** : pas à pas ou euclidien, 91 gammes (celles de nos synthés Rhizome et Monades), aléatoire, probabilité, sous-pas, un canal par pas.
+- **MIDI** : horloge, position de départ, pause et reprise, métronome en notes MIDI, mesures 4/4, 3/4, 2/4, 5/4, 6/8, 7/8.
 - **4 préréglages** (avec leur tempo), rappelables depuis l'écran ou depuis le menu de la boîte, et **export/import** des réglages en fichier.
 - **Écran dans le navigateur** : ouvre **https://dr-john-8bits.github.io/clockbox/** dans Chrome, clique « Connecter la boîte ». Tout s'affiche en direct, tout se règle à la souris, et le firmware se met à jour en un clic.
 - À compiler avec la bibliothèque uClock **2.3.x**.

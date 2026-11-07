@@ -1,14 +1,15 @@
 /*
- * clockbox - Arduino clock generator for electronic music instruments.
- * MIDI clock out + 3 analog clock/gate outputs + beat LED.
+ * clockbox - Arduino clock generator and MIDI sequencer for electronic music instruments.
+ * MIDI out + 3 analog clock/gate outputs + beat LED.
  *
  * Original project by Alexis Zbik (2020).
- * v2 (2026): one mode per jack (clocks, triplets, dotted, reset, run,
- * Euclidean rhythms) with an optional probability per jack, Euclidean
- * rhythms (with probability) and metronome as MIDI notes, free divisions,
- * per-jack offset and trigger/gate length, time
- * signatures, song position, pause/continue, presets, beat LED, steady tempo,
- * settings menu, and a screen in the web browser.
+ * v2 (2026): one mode per jack (clocks, triplets, dotted, free divisions,
+ * reset, run, sequencer tracks) with probability, offset and trigger/gate
+ * length; a 4-track MIDI sequencer (steps or Euclidean, 32 steps, the 91
+ * scales of the Monades / Rhizome FM-1 synths, randomness, probability,
+ * substeps, a MIDI channel per step, accent, humanize); MIDI metronome,
+ * time signatures, song position, pause/continue, presets with tempo, beat
+ * LED, steady tempo, a settings menu, and a screen in the web browser.
  *
  * Requires the uClock library v2.3.x by midilab: https://github.com/midilab/uClock
  * Target: Arduino Nano / Uno (ATmega328P).
@@ -27,11 +28,12 @@
  *
  * Screen on a computer (https://dr-john-8bits.github.io/clockbox/ or site/index.html, Chrome/Edge over USB):
  *   The box stays silent until the page says hello. Then it reports its state
- *   and settings as SysEx, and accepts settings and commands. See PROTOCOL.
+ *   and settings as SysEx, and accepts settings, sequences and commands. See PROTOCOL.
  */
 
 #include <uClock.h>
 #include <EEPROM.h>
+#include "scales.h"
 
 // ---------------------------------------------------------------- hardware --
 const uint8_t POT_PIN    = A0;
@@ -68,19 +70,21 @@ enum Mode : uint8_t {
   MODE_8TH_TRIPLET,     // 3 pulses per quarter
   MODE_16TH_TRIPLET,    // 6 pulses per quarter
   MODE_8TH_DOTTED,      // 1 pulse every dotted eighth
-  MODE_EUCLID_A,        // Euclidean rhythm A, B, C
-  MODE_EUCLID_B,
-  MODE_EUCLID_C,
+  MODE_TRACK_1,         // gates of sequencer tracks 1, 2, 3 (were Euclidean A, B, C)
+  MODE_TRACK_2,
+  MODE_TRACK_3,
   MODE_DIVISION,        // 1 pulse every N sixteenths (N per jack, 1..64): polyrhythms
+  MODE_TRACK_4,
   MODE_COUNT
 };
 // Clock periods in ticks (50 % duty), 0 = not a plain clock.
-const uint16_t MODE_PERIOD[MODE_COUNT] = {4, 24, 48, 96, 192, 0, 0, 0, 32, 16, 72, 0, 0, 0, 0};
+const uint16_t MODE_PERIOD[MODE_COUNT] = {4, 24, 48, 96, 192, 0, 0, 0, 32, 16, 72, 0, 0, 0, 0, 0};
 const uint16_t CYCLE_TICKS = 576;     // common multiple of every period above
 // Order of the modes along the pot, in the box menu.
 const uint8_t POT_ORDER[MODE_COUNT] = {
   MODE_24PPQN, MODE_16TH, MODE_16TH_TRIPLET, MODE_8TH, MODE_8TH_TRIPLET, MODE_8TH_DOTTED,
-  MODE_QUARTER, MODE_HALF, MODE_BAR, MODE_DIVISION, MODE_RESET, MODE_RUN, MODE_EUCLID_A, MODE_EUCLID_B, MODE_EUCLID_C
+  MODE_QUARTER, MODE_HALF, MODE_BAR, MODE_DIVISION, MODE_RESET, MODE_RUN,
+  MODE_TRACK_1, MODE_TRACK_2, MODE_TRACK_3, MODE_TRACK_4
 };
 
 // Time signatures: 4/4 3/4 2/4 5/4 6/8 7/8 (bar length and LED beat, in ticks)
@@ -88,24 +92,7 @@ const uint8_t  TIME_SIG_COUNT = 6;
 const uint16_t BAR_TICKS[TIME_SIG_COUNT]  = {384, 288, 192, 480, 288, 336};
 const uint8_t  BEAT_TICKS[TIME_SIG_COUNT] = {96, 96, 96, 96, 144, 48};
 
-// Euclidean rhythms
-const uint8_t EUCLID_COUNT = 3;
-const uint8_t EUCLID_MAX_STEPS = 32;
-const uint8_t EUCLID_DIV_COUNT = 4;
-const uint8_t EUCLID_DIV_TICKS[EUCLID_DIV_COUNT] = {24, 48, 16, 96};   // 1/16, 1/8, 1/16T, 1/4
-
 // --------------------------------------------------------------- settings --
-struct Euclid {
-  uint8_t steps;      // 1..32
-  uint8_t hits;       // 0..steps
-  uint8_t rotation;   // 0..steps-1, shifts the pattern to the right
-  uint8_t division;   // index in EUCLID_DIV_TICKS
-  uint8_t midi;       // 1 = also play a MIDI note on each hit
-  uint8_t channel;    // 0..15
-  uint8_t note;       // 0..127
-  uint8_t velocity;   // 1..127
-};
-
 struct Config {             // what a preset holds; every byte is 0..127 (fits SysEx)
   uint8_t jackMode[JACK_COUNT];
   uint8_t timeSig;          // index in BAR_TICKS
@@ -116,43 +103,75 @@ struct Config {             // what a preset holds; every byte is 0..127 (fits S
   uint8_t metroChannel;     // 0..15
   uint8_t metroNoteDown;    // note on beat 1
   uint8_t metroNoteBeat;    // note on the other beats
-  Euclid  euclid[EUCLID_COUNT];
-  // added in 2.3 (kept at the end so that 2.2 settings can be migrated)
   uint8_t jackProb[JACK_COUNT];     // 0..100 %: chance that each pulse of the jack is sent
-  uint8_t euclidProb[EUCLID_COUNT]; // 0..100 %: chance that each hit of the rhythm plays
-  // added in 2.4
   uint8_t jackTrigger[JACK_COUNT];  // 0 = gate (50 %), 1 = short trigger (one tick, ~5 ms at 120 BPM)
   uint8_t jackOffset[JACK_COUNT];   // delay in sixteenths, 0..15 (clocks, bar and division modes)
   uint8_t jackDivision[JACK_COUNT]; // N for MODE_DIVISION, in sixteenths, 1..64
 };
-const uint8_t CONFIG_SIZE = sizeof(Config);   // 50
-const uint8_t CONFIG_SIZE_V3 = 35;            // firmware 2.2
-const uint8_t CONFIG_SIZE_V4 = 41;            // firmware 2.3
+const uint8_t CONFIG_SIZE = sizeof(Config);   // 23
 const uint8_t MAX_OFFSET = 15, MAX_DIVISION = 64;
 
 const Config DEFAULT_CONFIG = {
   {MODE_16TH, MODE_RESET, MODE_8TH},
   0, 1, 1, 0,
   0, 9, 76, 77,                                  // metronome off, channel 10, wood blocks
-  {{16, 5, 0, 0, 0, 9, 36, 110},                 // A: 5 hits over 16, kick
-   { 8, 3, 0, 0, 0, 9, 38, 100},                 // B: tresillo, snare
-   {16, 7, 0, 0, 0, 9, 42, 80}},                 // C: 7 over 16, closed hat
-  {100, 100, 100},
-  {100, 100, 100},
-  {0, 0, 0},
-  {0, 0, 0},
-  {3, 3, 3}
+  {100, 100, 100}, {0, 0, 0}, {0, 0, 0}, {3, 3, 3}
 };
 
-// EEPROM layout: 'C' 'B' version, positions[3], config at 8,
-// presets at 64, 56 bytes each: magic, config, tempo in 0.1 BPM (2 bytes, 0 = none)
-const uint8_t  EEPROM_MAGIC0 = 'C', EEPROM_MAGIC1 = 'B', EEPROM_VERSION = 5;
+// ---------------------------------------------------------------- sequencer --
+const uint8_t TRACK_COUNT = 4;
+const uint8_t MAX_STEPS = 32;
+const uint8_t STEP_BYTES = 4;
+const uint8_t TRACK_DIV_COUNT = 5;
+const uint8_t TRACK_DIV_TICKS[TRACK_DIV_COUNT] = {24, 48, 16, 96, 12};   // 1/16, 1/8, 1/16T, 1/4, 1/32
+const uint8_t CHANNEL_ALL = 16;
+const uint8_t LEN_PERCENT[4] = {25, 50, 75, 95};
+enum TrackMode : uint8_t { TRACK_OFF, TRACK_STEPS, TRACK_EUCLID };
+enum Direction : uint8_t { DIR_FORWARD, DIR_BACKWARD, DIR_PINGPONG, DIR_RANDOM };
+
+struct Track {              // 16 bytes, every byte is 0..127
+  uint8_t mode;             // TrackMode
+  uint8_t length;           // 1..32 steps
+  uint8_t hits;             // Euclidean: hits over the length
+  uint8_t rotation;         // Euclidean: shift to the right, 0..length-1
+  uint8_t division;         // index in TRACK_DIV_TICKS
+  uint8_t channel;          // 0..15, or CHANNEL_ALL
+  uint8_t midi;             // 1 = play MIDI notes (the jacks follow the track anyway)
+  uint8_t scale;            // 0..SCALE_COUNT-1
+  uint8_t root;             // 0..11 (C..B)
+  uint8_t transpose;        // 0..48 = -24..+24 semitones
+  uint8_t direction;        // Direction
+  uint8_t prob;             // 0..100 %: chance for each step of the track
+  uint8_t randNote;         // 0..100 %: chance that a step plays a random note of the scale
+  uint8_t randRange;        // 0..24 semitones around the step note, for random notes
+  uint8_t humanize;         // 0..40: random velocity +-
+  uint8_t accent;           // 0..60: velocity added to the first hit of each cycle
+};
+const uint8_t TRACK_SIZE = sizeof(Track);
+
+// A step, 4 bytes:
+//   b0: bit 7 = on (steps mode), bits 0-6 = note
+//   b1: velocity 1..127
+//   b2: bits 0-4 = channel (0 = the track's, 1..16 = that channel), bits 5-7 = probability level
+//       (0 = 100 %, n = (8 - n) / 8)
+//   b3: bits 0-1 = substeps - 1 (1..4 notes in the step), bits 2-3 = length (25, 50, 75, 95 %),
+//       bit 4 = random note
+const uint8_t STEP_ON = 0x80, STEP_RANDOM = 0x10;
+
+// EEPROM layout (version 6):
+//   0 'C', 1 'B', 2 version, 3..5 jack places, 8.. config (23 bytes),
+//   64.. 4 presets of 26 bytes (magic, config, tempo in 0.1 BPM, 0 = none),
+//   176.. 4 tracks of 16 bytes, 240..241 custom scale mask, 512.. steps (4 x 32 x 4 bytes)
+const uint8_t  EEPROM_MAGIC0 = 'C', EEPROM_MAGIC1 = 'B', EEPROM_VERSION = 6;
 const uint8_t  EEPROM_POSITIONS = 3;
 const uint8_t  EEPROM_CONFIG = 8;
 const uint8_t  PRESET_COUNT = 4;
-const uint16_t EEPROM_PRESETS = 64, PRESET_STRIDE = 56;
-const uint16_t PRESET_STRIDE_V3 = 40, PRESET_STRIDE_V4 = 48;
+const uint16_t EEPROM_PRESETS = 64, PRESET_STRIDE = 1 + CONFIG_SIZE + 2;
 const uint8_t  PRESET_MAGIC = 0x5A;
+const uint16_t EEPROM_TRACKS = 176, EEPROM_CUSTOM = 240, EEPROM_STEPS = 512;
+// firmware 2.4 (EEPROM version 5), for the migration
+const uint8_t  V5_CONFIG_SIZE = 50;
+const uint16_t V5_PRESET_STRIDE = 56;
 
 // ---------------------------------------------------------------- PROTOCOL --
 // SysEx, manufacturer ID 0x7D (non-commercial), then 'C' 'B', a command, data.
@@ -161,19 +180,29 @@ const uint8_t  PRESET_MAGIC = 0x5A;
 //     11 jack mode            set one jack mode (saved)
 //     12 jack                 identify: only this jack pulses on every beat for 15 s (7F = stop)
 //     13 p0 p1 p2             physical place of each jack (0 top, 1 middle, 2 bottom), saved
-//     14 <config, 50 bytes>   replace the settings (saved)
+//     14 <config, 23 bytes>   replace the settings (saved)
 //     15 bpmHi bpmLo          tempo in 0.1 BPM (14 bits); the pot takes over when moved
 //     16 action               0 start, 1 stop, 2 pause, 3 continue, 4 back to the start
-//     17 op slot              preset: op 0 = load (with its tempo), 1 = save current settings and tempo, 2 = erase
+//     17 op slot              preset: op 0 = load (with its tempo), 1 = save, 2 = erase
+//     18 t s <step, 5 bytes>  set a step (4 bytes as 7-bit values, then their bits 7)
+//     19 t <track, 16 bytes>  set a track
+//     1A                      send the whole sequence (tracks, custom scale, steps)
+//     1B lo hi                custom scale mask (12 bits)
 //   box -> computer
 //     01 <state>              see sendState()
 //     02 <config> presetMask  current settings, and which preset slots are filled
+//     03 t <track>            a track
+//     04 t s <step, 5 bytes>  a step
+//     05 p0 p1 p2 p3 mask     playheads (7F = silent) and which tracks played a note
+//     06 lo hi                custom scale mask
 // The MIDI clock itself (F8 / FA / FB / FC / F2) is on the same line.
-const uint8_t FW_VERSION_MAJOR = 2, FW_VERSION_MINOR = 4;
+const uint8_t FW_VERSION_MAJOR = 2, FW_VERSION_MINOR = 5;
 const uint8_t SYSEX_ID = 0x7D, SYSEX_C = 'C', SYSEX_B = 'B';
-const uint8_t CMD_STATE = 0x01, CMD_CONFIG = 0x02,
+const uint8_t CMD_STATE = 0x01, CMD_CONFIG = 0x02, CMD_TRACK = 0x03, CMD_STEP = 0x04,
+              CMD_PLAYHEAD = 0x05, CMD_CUSTOM = 0x06,
               CMD_HELLO = 0x10, CMD_SET_MODE = 0x11, CMD_IDENTIFY = 0x12, CMD_SET_POSITIONS = 0x13,
-              CMD_SET_CONFIG = 0x14, CMD_SET_TEMPO = 0x15, CMD_TRANSPORT = 0x16, CMD_PRESET = 0x17;
+              CMD_SET_CONFIG = 0x14, CMD_SET_TEMPO = 0x15, CMD_TRANSPORT = 0x16, CMD_PRESET = 0x17,
+              CMD_SET_STEP = 0x18, CMD_SET_TRACK = 0x19, CMD_DUMP = 0x1A, CMD_SET_CUSTOM = 0x1B;
 const uint32_t IDENTIFY_MS = 15000;
 const uint16_t REPORT_MIN_INTERVAL_MS = 30;
 const uint8_t  REPORT_POT_STEP = 3;
@@ -181,12 +210,30 @@ const uint8_t  MENU_PAGES = JACK_COUNT + 1;   // 3 jacks, then the preset page
 
 // ================================================================= state ==
 
-// Position counters, advanced once per tick.
+// Position counters for the plain clocks, advanced once per tick.
 struct Counters {
-  uint16_t cycle;                 // 0..CYCLE_TICKS-1, for the plain clocks
+  uint16_t cycle;                 // 0..CYCLE_TICKS-1
   uint16_t bar;                   // position in the bar
-  uint8_t  sub[EUCLID_COUNT];     // tick within the current Euclidean step
-  uint8_t  step[EUCLID_COUNT];    // current Euclidean step
+};
+
+// Playback state of a sequencer track.
+struct TrackRun {
+  uint32_t count;     // steps since the start
+  uint8_t  sub;       // tick within the step
+  uint8_t  pos;       // step being played
+  bool     active;    // this step plays
+  uint8_t  ratchets;  // notes in this step
+  uint8_t  period;    // ticks between them
+  uint8_t  gateTicks; // ticks each one lasts
+  uint8_t  note, velocity, channel;
+  int16_t  bend;      // microtonal pitch bend, -8192..8191
+  bool     bent;      // a pitch bend was sent (reset it when going back to 12 tones)
+  int8_t   held;      // note sounding, -1 = none
+  uint8_t  heldChannel;
+  bool     gate;      // gate for the jacks following this track
+  bool     noteOn;    // a note started on this tick
+  bool     fresh;     // the first hit of the cycle is still to come (accent)
+  uint8_t  lastNote;  // previous note, to pick the ascending or descending form of a scale
 };
 
 // Where a jack is in its current pulse (see jackPhase()). Declared up here so
@@ -200,6 +247,10 @@ enum Transport : uint8_t { STOPPED, PLAYING, PAUSED };
 
 // shared with the clock interrupt
 Config            cfg;
+Track             tracks[TRACK_COUNT];
+uint8_t           steps[TRACK_COUNT][MAX_STEPS][STEP_BYTES];
+uint16_t          customMask = 0xFFF;
+TrackRun          runs[TRACK_COUNT];
 volatile uint8_t  transport = STOPPED;
 volatile bool     pendingStart = false;      // MIDI Start right before the next clock
 volatile bool     pendingContinue = false;   // MIDI Continue right before the next clock
@@ -207,16 +258,16 @@ volatile bool     menuActive = false;
 volatile uint8_t  menuPage = 0;
 volatile bool     menuLedPreview = false;    // LED copies the edited jack
 volatile int8_t   identifyJack = -1;
+volatile bool     playheadDirty = false;     // a track moved to a new step
+volatile uint8_t  playedMask = 0;            // tracks that played a note since the last report
 Counters          song;                      // advances while playing
 Counters          freeRun;                   // always advances (menu preview, identify)
 volatile uint32_t songTick = 0;              // position while playing / paused, in ticks
 uint32_t          freeTick = 0;              // always counting (previews)
-int8_t            heldNote[EUCLID_COUNT] = {-1, -1, -1};
-bool              jackGate[JACK_COUNT] = {true, true, true};   // this pulse passed its probability
-bool              euclidPlay[EUCLID_COUNT];                    // this step is a hit that passed its probability
-uint16_t          rngState = 0xACE1;
 int8_t            metroHeldNote = -1;
 uint8_t           metroOffIn = 0;
+bool              jackGate[JACK_COUNT] = {true, true, true};   // this pulse passed its probability
+uint16_t          rngState = 0xACE1;
 
 // loop only
 float    bpm = 120;
@@ -241,59 +292,52 @@ uint32_t menuBlinkStart = 0;
 bool     reporting = false;
 bool     stateDirty = false;
 bool     configDirty = false;
+int16_t  dumpIndex = -1;        // sequence dump in progress (see updateScreenLink())
 uint32_t lastReportAt = 0;
 uint16_t lastReportedPot = 0;
 uint32_t identifyUntil = 0;
 uint8_t  jackPosition[JACK_COUNT] = {0, 1, 2};
-uint8_t  rxBuffer[64];
+uint8_t  rxBuffer[48];
 uint8_t  rxLength = 0;
 bool     rxInSysex = false;
 
 static void markDirty() { stateDirty = true; }
 static void markConfigDirty() { configDirty = true; stateDirty = true; }
 
+static int8_t trackOfMode(uint8_t mode) {
+  if (mode >= MODE_TRACK_1 && mode <= MODE_TRACK_3) return mode - MODE_TRACK_1;
+  if (mode == MODE_TRACK_4) return 3;
+  return -1;
+}
+
 // ================================================================ rhythm ==
 
-static bool euclidHit(const Euclid &e, uint8_t step) {
-  if (e.hits == 0 || e.steps == 0) return false;
-  uint8_t i = (uint8_t)((step + e.steps - (e.rotation % e.steps)) % e.steps);
-  return (uint16_t)(i * e.hits) % e.steps < e.hits;
-}
-
-static uint16_t barTicks() { return BAR_TICKS[cfg.timeSig]; }
-
-static void resetCounters(Counters &c) {
-  c.cycle = 0; c.bar = 0;
-  for (uint8_t g = 0; g < EUCLID_COUNT; g++) { c.sub[g] = 0; c.step[g] = 0; }
-}
-
-static void setCounters(Counters &c, uint32_t pos) {
-  c.cycle = pos % CYCLE_TICKS;
-  c.bar = pos % barTicks();
-  for (uint8_t g = 0; g < EUCLID_COUNT; g++) {
-    uint8_t div = EUCLID_DIV_TICKS[cfg.euclid[g].division];
-    c.sub[g] = pos % div;
-    c.step[g] = (pos / div) % cfg.euclid[g].steps;
-  }
-}
-
-static void advance(Counters &c) {
-  if (++c.cycle >= CYCLE_TICKS) c.cycle = 0;
-  if (++c.bar >= barTicks()) c.bar = 0;
-  for (uint8_t g = 0; g < EUCLID_COUNT; g++) {
-    if (++c.sub[g] >= EUCLID_DIV_TICKS[cfg.euclid[g].division]) {
-      c.sub[g] = 0;
-      if (++c.step[g] >= cfg.euclid[g].steps) c.step[g] = 0;
-    }
-  }
-}
-
-// Small random generator for the probabilities (16-bit xorshift, ISR-safe).
+// Small random generator (16-bit xorshift, ISR-safe).
 static uint16_t rnd() {
   rngState ^= rngState << 7; rngState ^= rngState >> 9; rngState ^= rngState << 8;
   return rngState;
 }
 static bool chance(uint8_t percent) { return percent >= 100 || rnd() % 100 < percent; }
+
+static bool euclidHit(uint8_t steps_, uint8_t hits, uint8_t rotation, uint8_t step) {
+  if (hits == 0 || steps_ == 0) return false;
+  uint8_t i = (uint8_t)((step + steps_ - (rotation % steps_)) % steps_);
+  return (uint16_t)(i * hits) % steps_ < hits;
+}
+
+static uint16_t barTicks() { return BAR_TICKS[cfg.timeSig]; }
+
+static void resetCounters(Counters &c) { c.cycle = 0; c.bar = 0; }
+
+static void setCounters(Counters &c, uint32_t pos) {
+  c.cycle = pos % CYCLE_TICKS;
+  c.bar = pos % barTicks();
+}
+
+static void advance(Counters &c) {
+  if (++c.cycle >= CYCLE_TICKS) c.cycle = 0;
+  if (++c.bar >= barTicks()) c.bar = 0;
+}
 
 // Where a jack is in its current pulse, for its mode, offset, division and gate length.
 static Phase jackPhase(uint8_t j, const Counters &c, uint32_t pos, bool preview) {
@@ -301,7 +345,7 @@ static Phase jackPhase(uint8_t j, const Counters &c, uint32_t pos, bool preview)
   uint16_t off = (uint16_t)cfg.jackOffset[j] * 24;
   uint16_t period = MODE_PERIOD[mode], phase, length;
   Phase r = {false, false};
-  bool hit = true;
+  int8_t t = trackOfMode(mode);
   if (period) {                                     // plain clocks
     length = period;
     phase = (c.cycle + CYCLE_TICKS - off) % CYCLE_TICKS % period;
@@ -317,15 +361,20 @@ static Phase jackPhase(uint8_t j, const Counters &c, uint32_t pos, bool preview)
   } else if (mode == MODE_RESET) {
     r.level = preview && c.bar < 2;                 // the real pulse comes from startTransport()
     return r;
-  } else {                                          // Euclidean: the rotation is its offset
-    uint8_t g = mode - MODE_EUCLID_A;
-    const Euclid &e = cfg.euclid[g];
-    length = EUCLID_DIV_TICKS[e.division];
-    phase = c.sub[g];
-    hit = preview ? euclidHit(e, c.step[g]) : euclidPlay[g];
+  } else if (preview) {                             // a track, while stopped: its pattern, no randomness
+    const Track &k = tracks[t];
+    if (k.mode == TRACK_OFF) return r;
+    uint8_t div = TRACK_DIV_TICKS[k.division], s = (pos / div) % k.length;
+    bool on = k.mode == TRACK_STEPS ? (steps[t][s][0] & STEP_ON) : euclidHit(k.length, k.hits, k.rotation, s);
+    r.level = on && pos % div < div / 2;
+    return r;
+  } else {                                          // a track, playing: follow its notes
+    r.start = runs[t].noteOn;
+    r.level = cfg.jackTrigger[j] ? runs[t].noteOn : runs[t].gate;
+    return r;
   }
   r.start = phase == 0;
-  r.level = hit && (cfg.jackTrigger[j] ? phase == 0 : phase < length / 2);
+  r.level = cfg.jackTrigger[j] ? phase == 0 : phase < length / 2;
   return r;
 }
 
@@ -337,15 +386,179 @@ static void midi3(uint8_t status, uint8_t d1, uint8_t d2) {
   Serial.write(status); Serial.write(d1); Serial.write(d2);
 }
 
+// Send a channel message to one channel, or to all 16.
+static void midiTo(uint8_t channel, uint8_t status, uint8_t d1, uint8_t d2) {
+  if (channel == CHANNEL_ALL) for (uint8_t c = 0; c < 16; c++) midi3(status | c, d1, d2);
+  else midi3(status | channel, d1, d2);
+}
+
+static void trackNoteOff(uint8_t t) {
+  TrackRun &r = runs[t];
+  if (r.held >= 0) { midiTo(r.heldChannel, 0x80, r.held, 0); r.held = -1; }
+  r.gate = false;
+}
+
 static void releaseNotes() {   // call with interrupts off or from the ISR
-  for (uint8_t g = 0; g < EUCLID_COUNT; g++) {
-    if (heldNote[g] >= 0) { midi3(0x80 | cfg.euclid[g].channel, heldNote[g], 0); heldNote[g] = -1; }
-  }
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) trackNoteOff(t);
   if (metroHeldNote >= 0) { midi3(0x80 | cfg.metroChannel, metroHeldNote, 0); metroHeldNote = -1; }
 }
 
-static void playNotes(const Counters &c) {
-  // metronome
+// ------------------------------------------------------------------ scales --
+
+static int32_t floorDiv(int32_t a, int32_t b) { return a >= 0 ? a / b : -((-a + b - 1) / b); }
+
+static uint16_t scaleMask(uint8_t scale, bool down) {
+  if (scale == SCALE_CUSTOM) return customMask ? customMask : 0xFFF;
+  return pgm_read_word(&SCALE_MASK[scale][down ? 1 : 0]);
+}
+
+// Bring a note into the track's scale. 12-tone scales round down to the nearest
+// degree (ascending or descending form); microtonal scales take the nearest
+// degree and return a pitch bend (range +-2 semitones).
+static uint8_t quantize(const Track &k, int16_t note, bool down, int16_t &bend) {
+  bend = 0;
+  if (note < 0) note = 0;
+  if (note > 127) note = 127;
+  if (k.scale < SCALE_TWELVE) {
+    uint16_t mask = scaleMask(k.scale, down);
+    int8_t deg = ((note - k.root) % 12 + 12) % 12;
+    for (uint8_t i = 0; i < 12 && !(mask & (1 << deg)); i++) {
+      note--;
+      if (--deg < 0) deg += 12;
+    }
+    return note < 0 ? 0 : note;
+  }
+  uint8_t m = k.scale - SCALE_TWELVE;
+  uint8_t count = pgm_read_byte(&MICRO_DEGREES[m]);
+  int32_t period = pgm_read_word(&MICRO_PERIOD[m]);
+  uint16_t first = pgm_read_word(&MICRO_OFFSET[m]);
+  int32_t base = (int32_t)(60 + k.root) * 1000;             // in 0.1 cent
+  int32_t t = (int32_t)note * 1000 - base;
+  int32_t oct = floorDiv(t, period), rem = t - oct * period;
+  int32_t best = 0, bestDist = rem;                         // degree 0
+  if (period - rem < bestDist) { best = period; bestDist = period - rem; }
+  for (uint8_t i = 0; i < count; i++) {
+    int32_t d = pgm_read_word(&MICRO_CENTS[first + i]);
+    int32_t dist = d > rem ? d - rem : rem - d;
+    if (dist < bestDist) { best = d; bestDist = dist; }
+  }
+  int32_t pitch = base + oct * period + best;
+  int32_t out = floorDiv(pitch + 500, 1000);
+  if (out < 0) out = 0;
+  if (out > 127) out = 127;
+  bend = (int16_t)((pitch - out * 1000) * 8192 / 2000);
+  if (bend > 8191) bend = 8191;
+  if (bend < -8192) bend = -8192;
+  return out;
+}
+
+// ---------------------------------------------------------------- tracks --
+
+static uint8_t stepPosition(const Track &k, uint32_t count) {
+  uint8_t L = k.length;
+  switch (k.direction) {
+    case DIR_BACKWARD: return L - 1 - count % L;
+    case DIR_PINGPONG: {
+      if (L < 2) return 0;
+      uint16_t p = count % (2 * L - 2);
+      return p < L ? p : 2 * L - 2 - p;
+    }
+    case DIR_RANDOM: return rnd() % L;
+    default: return count % L;
+  }
+}
+
+static uint8_t cycleLength(const Track &k) {
+  return k.direction == DIR_PINGPONG && k.length > 1 ? 2 * k.length - 2 : k.length;
+}
+
+// Decide what a step plays: called on its first tick.
+static void beginStep(uint8_t t) {
+  const Track &k = tracks[t];
+  TrackRun &r = runs[t];
+  trackNoteOff(t);
+  if (r.count % cycleLength(k) == 0) r.fresh = true;
+  r.pos = stepPosition(k, r.count);
+  const uint8_t *s = steps[t][r.pos];
+  bool on = k.mode == TRACK_STEPS ? (s[0] & STEP_ON) : euclidHit(k.length, k.hits, k.rotation, r.pos);
+  uint8_t level = s[2] >> 5;
+  r.active = on && chance(k.prob) && (level == 0 || (rnd() & 7) >= level);
+  playheadDirty = true;
+  if (!r.active) return;
+
+  uint8_t div = TRACK_DIV_TICKS[k.division];
+  r.ratchets = (s[3] & 3) + 1;
+  r.period = div / r.ratchets;
+  r.gateTicks = (uint16_t)r.period * LEN_PERCENT[(s[3] >> 2) & 3] / 100;
+  if (r.gateTicks < 1) r.gateTicks = 1;
+  if (r.gateTicks >= r.period) r.gateTicks = r.period - 1 ? r.period - 1 : 1;
+
+  int16_t n = s[0] & 0x7F;
+  if ((s[3] & STEP_RANDOM) || chance(k.randNote))
+    n += (int16_t)(rnd() % (2 * k.randRange + 1)) - k.randRange;
+  n += (int16_t)k.transpose - 24;
+  r.note = quantize(k, n, n < r.lastNote, r.bend);
+  r.lastNote = r.note;
+
+  int16_t v = s[1];
+  if (r.fresh) { v += k.accent; r.fresh = false; }
+  if (k.humanize) v += (int16_t)(rnd() % (2 * k.humanize + 1)) - k.humanize;
+  r.velocity = v < 1 ? 1 : v > 127 ? 127 : v;
+  uint8_t ch = s[2] & 0x1F;
+  r.channel = ch ? (ch > 16 ? CHANNEL_ALL : ch - 1) : k.channel;
+}
+
+static void trackNoteOn(uint8_t t) {
+  const Track &k = tracks[t];
+  TrackRun &r = runs[t];
+  trackNoteOff(t);
+  if (k.midi) {
+    if (k.scale >= SCALE_TWELVE || r.bent) {   // microtonal: bend first (centre it back otherwise)
+      uint16_t b = 8192 + r.bend;
+      midiTo(r.channel, 0xE0, b & 0x7F, b >> 7);
+      r.bent = r.bend != 0;
+    }
+    midiTo(r.channel, 0x90, r.note, r.velocity);
+    r.held = r.note;
+    r.heldChannel = r.channel;
+  }
+  r.gate = true;
+  r.noteOn = true;
+  playedMask |= 1 << t;
+}
+
+static void runTracks() {
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) {
+    const Track &k = tracks[t];
+    TrackRun &r = runs[t];
+    r.noteOn = false;
+    if (k.mode == TRACK_OFF) continue;
+    if (r.sub == 0) beginStep(t);
+    if (r.active) {
+      uint8_t within = r.sub % r.period, idx = r.sub / r.period;
+      if (within == r.gateTicks) trackNoteOff(t);
+      if (within == 0 && idx < r.ratchets) trackNoteOn(t);
+    }
+    if (++r.sub >= TRACK_DIV_TICKS[k.division]) { r.sub = 0; r.count++; }
+  }
+}
+
+// Put every track at a song position (start, continue, new settings).
+static void setRuns(uint32_t pos) {
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) {
+    TrackRun &r = runs[t];
+    uint8_t div = TRACK_DIV_TICKS[tracks[t].division];
+    r.sub = pos % div;
+    r.count = pos / div;
+    r.active = false;
+    r.gate = false;
+    r.noteOn = false;
+    r.fresh = r.count % cycleLength(tracks[t]) == 0;
+    r.pos = r.count % tracks[t].length;
+  }
+}
+
+static void playMetronome(const Counters &c) {
   if (metroHeldNote >= 0 && metroOffIn && --metroOffIn == 0) {
     midi3(0x80 | cfg.metroChannel, metroHeldNote, 0);
     metroHeldNote = -1;
@@ -357,21 +570,6 @@ static void playNotes(const Counters &c) {
       metroHeldNote = down ? cfg.metroNoteDown : cfg.metroNoteBeat;
       midi3(0x90 | cfg.metroChannel, metroHeldNote, down ? 120 : 90);
       metroOffIn = 12;
-    }
-  }
-  // Euclidean notes
-  for (uint8_t g = 0; g < EUCLID_COUNT; g++) {
-    const Euclid &e = cfg.euclid[g];
-    uint8_t div = EUCLID_DIV_TICKS[e.division];
-    if (c.sub[g] == div / 2 && heldNote[g] >= 0) {
-      midi3(0x80 | e.channel, heldNote[g], 0);
-      heldNote[g] = -1;
-    }
-    if (c.sub[g] == 0) euclidPlay[g] = euclidHit(e, c.step[g]) && chance(cfg.euclidProb[g]);
-    if (e.midi && c.sub[g] == 0 && euclidPlay[g]) {
-      if (heldNote[g] >= 0) midi3(0x80 | e.channel, heldNote[g], 0);
-      heldNote[g] = e.note;
-      midi3(0x90 | e.channel, e.note, e.velocity);
     }
   }
 }
@@ -389,7 +587,7 @@ void onClockTick(uint32_t tick) {
     if (playing || cfg.clockWhenStopped) Serial.write(0xF8);
   }
 
-  if (playing) playNotes(song);
+  if (playing) { playMetronome(song); runTracks(); }
 
   if (identifyJack >= 0) {
     bool level = freeRun.cycle % 96 < 48;     // one pulse per beat
@@ -442,19 +640,26 @@ static bool validConfig(const Config &c) {
   if (c.timeSig >= TIME_SIG_COUNT || c.clockWhenStopped > 1 || c.songPosition > 1 ||
       c.buttonPauses > 1 || c.metroMode > 2 || c.metroChannel > 15 ||
       c.metroNoteDown > 127 || c.metroNoteBeat > 127) return false;
-  for (uint8_t g = 0; g < EUCLID_COUNT; g++) {
-    const Euclid &e = c.euclid[g];
-    if (e.steps < 1 || e.steps > EUCLID_MAX_STEPS || e.hits > e.steps || e.rotation >= e.steps ||
-        e.division >= EUCLID_DIV_COUNT || e.midi > 1 || e.channel > 15 || e.note > 127 ||
-        e.velocity < 1 || e.velocity > 127) return false;
-  }
-  for (uint8_t j = 0; j < JACK_COUNT; j++) if (c.jackProb[j] > 100) return false;
-  for (uint8_t g = 0; g < EUCLID_COUNT; g++) if (c.euclidProb[g] > 100) return false;
   for (uint8_t j = 0; j < JACK_COUNT; j++) {
-    if (c.jackTrigger[j] > 1 || c.jackOffset[j] > MAX_OFFSET ||
+    if (c.jackProb[j] > 100 || c.jackTrigger[j] > 1 || c.jackOffset[j] > MAX_OFFSET ||
         c.jackDivision[j] < 1 || c.jackDivision[j] > MAX_DIVISION) return false;
   }
   return true;
+}
+
+static bool validTrack(const Track &k) {
+  return k.mode <= TRACK_EUCLID && k.length >= 1 && k.length <= MAX_STEPS && k.hits <= k.length &&
+         k.rotation < k.length && k.division < TRACK_DIV_COUNT && k.channel <= CHANNEL_ALL &&
+         k.midi <= 1 && k.scale < SCALE_COUNT && k.root < 12 && k.transpose <= 48 &&
+         k.direction <= DIR_RANDOM && k.prob <= 100 && k.randNote <= 100 && k.randRange <= 24 &&
+         k.humanize <= 40 && k.accent <= 60;
+}
+
+static void fixStep(uint8_t *s) {
+  if ((s[1] & 0x7F) == 0) s[1] = 100;
+  s[1] &= 0x7F;
+  if ((s[2] & 0x1F) > 17) s[2] &= 0xE0;
+  s[3] &= 0x1F;
 }
 
 // Install new settings safely while the clock runs.
@@ -468,6 +673,14 @@ static void applyConfig(const Config &c) {
   markConfigDirty();
 }
 
+static void applyTrack(uint8_t t, const Track &k) {
+  noInterrupts();
+  trackNoteOff(t);
+  tracks[t] = k;
+  setRuns(songTick);
+  interrupts();
+}
+
 static void saveConfig() {
   EEPROM.update(0, EEPROM_MAGIC0);
   EEPROM.update(1, EEPROM_MAGIC1);
@@ -475,6 +688,21 @@ static void saveConfig() {
   for (uint8_t j = 0; j < JACK_COUNT; j++) EEPROM.update(EEPROM_POSITIONS + j, jackPosition[j]);
   const uint8_t *p = (const uint8_t *)&cfg;
   for (uint8_t i = 0; i < CONFIG_SIZE; i++) EEPROM.update(EEPROM_CONFIG + i, p[i]);
+}
+
+static void saveTrack(uint8_t t) {
+  const uint8_t *p = (const uint8_t *)&tracks[t];
+  for (uint8_t i = 0; i < TRACK_SIZE; i++) EEPROM.update(EEPROM_TRACKS + t * TRACK_SIZE + i, p[i]);
+}
+
+static void saveStep(uint8_t t, uint8_t s) {
+  for (uint8_t i = 0; i < STEP_BYTES; i++)
+    EEPROM.update(EEPROM_STEPS + ((uint16_t)t * MAX_STEPS + s) * STEP_BYTES + i, steps[t][s][i]);
+}
+
+static void saveCustom() {
+  EEPROM.update(EEPROM_CUSTOM, customMask & 0xFF);
+  EEPROM.update(EEPROM_CUSTOM + 1, customMask >> 8);
 }
 
 static bool readConfig(uint16_t addr, Config &out) {
@@ -519,35 +747,117 @@ static void savePreset(uint8_t slot) {
   markConfigDirty();
 }
 
-// Settings saved by older 2.x firmware: the same fields minus the newer ones
-// (which take their default values), presets packed closer. Convert in place.
-static bool fromOld(const uint8_t *bytes, uint8_t size, Config &out) {
+// ------------------------------------------------------- default sequence --
+
+static void defaultTrack(uint8_t t, Track &k) {
+  //            mode          len hits rot div ch midi scale root tr  dir  prob rn rr hum acc
+  Track d[4] = {{TRACK_EUCLID, 16, 5, 0, 0, 9, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // kick
+                {TRACK_EUCLID,  8, 3, 0, 0, 9, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // snare
+                {TRACK_EUCLID, 16, 7, 0, 0, 9, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // hat
+                {TRACK_STEPS,  16, 4, 0, 0, 0, 0, 1, 0, 24, 0, 100, 0, 12, 0, 0}};   // C minor line
+  k = d[t];
+}
+
+static void defaultSteps(uint8_t t, uint8_t note, uint8_t velocity) {
+  static const uint8_t line[16] = {36, 0, 0, 39, 0, 0, 43, 0, 46, 0, 0, 43, 0, 39, 0, 0};
+  for (uint8_t s = 0; s < MAX_STEPS; s++) {
+    uint8_t n = note, on = 0;
+    if (t == 3) { n = line[s % 16] ? line[s % 16] : 48; on = line[s % 16] ? STEP_ON : 0; }
+    steps[t][s][0] = on | n;
+    steps[t][s][1] = velocity;
+    steps[t][s][2] = 0;
+    steps[t][s][3] = 1 << 2;   // one note, 50 %
+  }
+}
+
+static void defaultSequence() {
+  static const uint8_t notes[4] = {36, 38, 42, 48}, vel[4] = {110, 100, 80, 100};
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) {
+    defaultTrack(t, tracks[t]);
+    defaultSteps(t, notes[t], vel[t]);
+  }
+  customMask = 0xFFF;
+}
+
+static void saveSequence() {
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) {
+    saveTrack(t);
+    for (uint8_t s = 0; s < MAX_STEPS; s++) saveStep(t, s);
+  }
+  saveCustom();
+}
+
+// Firmware 2.4 (EEPROM version 5): the settings held the Euclidean rhythms A, B
+// and C. They become tracks 1 to 3 (same jack mode numbers); presets keep their
+// jack settings and tempo.
+static bool fromV5(const uint8_t *b, Config &out) {
   out = DEFAULT_CONFIG;
-  memcpy(&out, bytes, size);
+  memcpy(out.jackMode, b, 3);
+  memcpy(&out.timeSig, b + 3, 8);         // time signature .. metronome
+  memcpy(out.jackProb, b + 35, 3);
+  memcpy(out.jackTrigger, b + 41, 3);
+  memcpy(out.jackOffset, b + 44, 3);
+  memcpy(out.jackDivision, b + 47, 3);
   return validConfig(out);
 }
 
-static void migrate(uint8_t size, uint8_t stride) {
-  uint8_t old[PRESET_COUNT][1 + CONFIG_SIZE_V4];   // read everything first: the areas overlap
-  for (uint8_t s = 0; s < PRESET_COUNT; s++)
-    for (uint8_t i = 0; i < 1 + size; i++) old[s][i] = EEPROM.read(EEPROM_PRESETS + s * stride + i);
-  uint8_t cur[CONFIG_SIZE_V4];
-  for (uint8_t i = 0; i < size; i++) cur[i] = EEPROM.read(EEPROM_CONFIG + i);
-  if (!fromOld(cur, size, cfg)) cfg = DEFAULT_CONFIG;
+static void migrateFromV5() {
+  uint8_t old[V5_CONFIG_SIZE];
+  for (uint8_t i = 0; i < V5_CONFIG_SIZE; i++) old[i] = EEPROM.read(EEPROM_CONFIG + i);
+  defaultSequence();
+  for (uint8_t g = 0; g < 3; g++) {      // Euclidean A, B, C -> tracks 1, 2, 3
+    const uint8_t *e = old + 11 + g * 8;  // steps hits rotation division midi channel note velocity
+    Track &k = tracks[g];
+    if (e[0] >= 1 && e[0] <= MAX_STEPS && e[1] <= e[0] && e[2] < e[0] && e[3] < 4 && e[5] < 16) {
+      k.mode = TRACK_EUCLID; k.length = e[0]; k.hits = e[1]; k.rotation = e[2]; k.division = e[3];
+      k.midi = e[4] ? 1 : 0; k.channel = e[5]; k.accent = 0;
+      uint8_t p = old[38 + g];
+      k.prob = p <= 100 ? p : 100;
+      defaultSteps(g, e[6] & 0x7F, e[7] ? e[7] & 0x7F : 100);
+    }
+  }
+  Config presets[PRESET_COUNT];
+  uint16_t tempos[PRESET_COUNT];
+  bool filled[PRESET_COUNT];
   for (uint8_t s = 0; s < PRESET_COUNT; s++) {
-    Config tmp;
-    if (old[s][0] == PRESET_MAGIC && fromOld(old[s] + 1, size, tmp)) writePreset(s, tmp, 0);
+    uint16_t a = EEPROM_PRESETS + s * V5_PRESET_STRIDE;
+    uint8_t b[V5_CONFIG_SIZE];
+    for (uint8_t i = 0; i < V5_CONFIG_SIZE; i++) b[i] = EEPROM.read(a + 1 + i);
+    filled[s] = EEPROM.read(a) == PRESET_MAGIC && fromV5(b, presets[s]);
+    tempos[s] = EEPROM.read(a + 1 + V5_CONFIG_SIZE) | ((uint16_t)EEPROM.read(a + 2 + V5_CONFIG_SIZE) << 8);
+  }
+  if (!fromV5(old, cfg)) cfg = DEFAULT_CONFIG;
+  for (uint8_t s = 0; s < PRESET_COUNT; s++) {
+    if (filled[s]) writePreset(s, presets[s], tempos[s]);
     else EEPROM.update(EEPROM_PRESETS + s * PRESET_STRIDE, 0);
   }
+  saveSequence();
   saveConfig();   // writes the new version number
 }
 
 static void loadSettings() {
   bool magic = EEPROM.read(0) == EEPROM_MAGIC0 && EEPROM.read(1) == EEPROM_MAGIC1;
-  if (magic && EEPROM.read(2) == 3) migrate(CONFIG_SIZE_V3, PRESET_STRIDE_V3);
-  if (magic && EEPROM.read(2) == 4) migrate(CONFIG_SIZE_V4, PRESET_STRIDE_V4);
+  if (magic && EEPROM.read(2) == 5) migrateFromV5();
   bool valid = magic && EEPROM.read(2) == EEPROM_VERSION;
   if (!valid || !readConfig(EEPROM_CONFIG, cfg)) cfg = DEFAULT_CONFIG;
+
+  if (valid) {
+    for (uint8_t t = 0; t < TRACK_COUNT; t++) {
+      uint8_t *p = (uint8_t *)&tracks[t];
+      for (uint8_t i = 0; i < TRACK_SIZE; i++) p[i] = EEPROM.read(EEPROM_TRACKS + t * TRACK_SIZE + i);
+      if (!validTrack(tracks[t])) defaultTrack(t, tracks[t]);
+      for (uint8_t s = 0; s < MAX_STEPS; s++) {
+        for (uint8_t i = 0; i < STEP_BYTES; i++)
+          steps[t][s][i] = EEPROM.read(EEPROM_STEPS + ((uint16_t)t * MAX_STEPS + s) * STEP_BYTES + i);
+        fixStep(steps[t][s]);
+      }
+    }
+    customMask = (EEPROM.read(EEPROM_CUSTOM) | ((uint16_t)EEPROM.read(EEPROM_CUSTOM + 1) << 8)) & 0xFFF;
+  } else {
+    defaultSequence();
+    saveSequence();
+    saveConfig();
+  }
 
   uint8_t seen = 0;   // positions must be a permutation of 0..JACK_COUNT-1
   for (uint8_t j = 0; j < JACK_COUNT; j++) {
@@ -555,7 +865,7 @@ static void loadSettings() {
     if (p < JACK_COUNT) seen |= 1 << p;
     jackPosition[j] = p;
   }
-  if (!valid || seen != (1 << JACK_COUNT) - 1) {
+  if (seen != (1 << JACK_COUNT) - 1) {
     for (uint8_t j = 0; j < JACK_COUNT; j++) jackPosition[j] = j;
   }
 }
@@ -587,6 +897,7 @@ static void startTransport() {
   releaseNotes();
   songTick = 0;
   resetCounters(song);
+  setRuns(0);
   if (cfg.songPosition) sendSongPosition(0);
   interrupts();
   bool reset = false;
@@ -614,6 +925,7 @@ static void stopTransport(bool pause) {
   releaseNotes();
   interrupts();
   if (!pause) songTick = 0;
+  playheadDirty = true;
   markDirty();
 }
 
@@ -623,6 +935,7 @@ static void continueTransport() {
   noInterrupts();
   songTick -= songTick % 24;   // resume on a sixteenth, as the Song Position Pointer does
   setCounters(song, songTick);
+  setRuns(songTick);
   if (cfg.songPosition) sendSongPosition(songTick);
   interrupts();
   pendingContinue = true;
@@ -637,8 +950,10 @@ static void rewindTransport() {
   songTick = 0;
   noInterrupts();
   resetCounters(song);
+  setRuns(0);
   if (cfg.songPosition) sendSongPosition(0);
   interrupts();
+  playheadDirty = true;
   markDirty();
 }
 
@@ -684,6 +999,41 @@ static void sendConfig() {
   msg[5 + CONFIG_SIZE] = mask;
   msg[6 + CONFIG_SIZE] = 0xF7;
   if (sendSysex(msg, sizeof(msg))) configDirty = false;
+}
+
+static bool sendTrack(uint8_t t) {
+  uint8_t msg[6 + TRACK_SIZE + 1];
+  msg[0] = 0xF0; msg[1] = SYSEX_ID; msg[2] = SYSEX_C; msg[3] = SYSEX_B; msg[4] = CMD_TRACK; msg[5] = t;
+  memcpy(msg + 6, &tracks[t], TRACK_SIZE);
+  msg[6 + TRACK_SIZE] = 0xF7;
+  return sendSysex(msg, sizeof(msg));
+}
+
+static bool sendStep(uint8_t t, uint8_t s) {
+  const uint8_t *b = steps[t][s];
+  uint8_t hi = 0;
+  for (uint8_t i = 0; i < STEP_BYTES; i++) hi |= (b[i] >> 7) << i;
+  uint8_t msg[] = {0xF0, SYSEX_ID, SYSEX_C, SYSEX_B, CMD_STEP, t, s,
+                   (uint8_t)(b[0] & 0x7F), (uint8_t)(b[1] & 0x7F), (uint8_t)(b[2] & 0x7F), (uint8_t)(b[3] & 0x7F), hi, 0xF7};
+  return sendSysex(msg, sizeof(msg));
+}
+
+static bool sendCustom() {
+  uint8_t msg[] = {0xF0, SYSEX_ID, SYSEX_C, SYSEX_B, CMD_CUSTOM,
+                   (uint8_t)(customMask & 0x7F), (uint8_t)(customMask >> 7), 0xF7};
+  return sendSysex(msg, sizeof(msg));
+}
+
+static bool sendPlayheads() {
+  uint8_t msg[11] = {0xF0, SYSEX_ID, SYSEX_C, SYSEX_B, CMD_PLAYHEAD};
+  for (uint8_t t = 0; t < TRACK_COUNT; t++)
+    msg[5 + t] = transport == STOPPED || tracks[t].mode == TRACK_OFF ? 0x7F : runs[t].pos;
+  msg[9] = playedMask;
+  msg[10] = 0xF7;
+  if (!sendSysex(msg, sizeof(msg))) return false;
+  playedMask = 0;
+  playheadDirty = false;
+  return true;
 }
 
 static void handleCommand() {
@@ -761,7 +1111,52 @@ static void handleCommand() {
         else if (d[0] == 2) { EEPROM.update(EEPROM_PRESETS + d[1] * PRESET_STRIDE, 0); markConfigDirty(); }
       }
       break;
+    case CMD_SET_STEP:
+      if (n >= 7 && d[0] < TRACK_COUNT && d[1] < MAX_STEPS) {
+        uint8_t b[STEP_BYTES];
+        for (uint8_t i = 0; i < STEP_BYTES; i++) b[i] = d[2 + i] | (((d[6] >> i) & 1) << 7);
+        fixStep(b);
+        noInterrupts();
+        memcpy(steps[d[0]][d[1]], b, STEP_BYTES);
+        interrupts();
+        saveStep(d[0], d[1]);
+      }
+      break;
+    case CMD_SET_TRACK:
+      if (n >= 1 + TRACK_SIZE && d[0] < TRACK_COUNT) {
+        Track k;
+        memcpy(&k, d + 1, TRACK_SIZE);
+        if (validTrack(k)) { applyTrack(d[0], k); saveTrack(d[0]); }
+        else sendTrack(d[0]);   // send back what the box really has
+      }
+      break;
+    case CMD_DUMP:
+      dumpIndex = 0;
+      break;
+    case CMD_SET_CUSTOM:
+      if (n >= 2) {
+        customMask = (d[0] | ((uint16_t)d[1] << 7)) & 0xFFF;
+        saveCustom();
+      }
+      break;
   }
+}
+
+// Sequence dump, one message per call when there is room: tracks, custom scale, steps.
+static void continueDump() {
+  const int16_t total = TRACK_COUNT + 1 + TRACK_COUNT * MAX_STEPS;
+  while (dumpIndex >= 0 && dumpIndex < total) {
+    bool sent;
+    if (dumpIndex < TRACK_COUNT) sent = sendTrack(dumpIndex);
+    else if (dumpIndex == TRACK_COUNT) sent = sendCustom();
+    else {
+      int16_t i = dumpIndex - TRACK_COUNT - 1;
+      sent = sendStep(i / MAX_STEPS, i % MAX_STEPS);
+    }
+    if (!sent) return;
+    dumpIndex++;
+  }
+  dumpIndex = -1;
 }
 
 static void updateScreenLink() {
@@ -781,6 +1176,8 @@ static void updateScreenLink() {
   }
 
   if (!reporting) return;
+  if (dumpIndex >= 0) continueDump();
+  if (playheadDirty) sendPlayheads();
   if (potDistance(potValue, lastReportedPot) >= REPORT_POT_STEP) markDirty();
   if (millis() - lastReportAt < REPORT_MIN_INTERVAL_MS) return;
   if (configDirty) sendConfig();
@@ -917,11 +1314,13 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   for (uint8_t j = 0; j < JACK_COUNT; j++) pinMode(JACK_PINS[j], OUTPUT);
 
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) { runs[t].held = -1; runs[t].lastNote = 60; }
   loadSettings();
   rngState = (analogRead(A1) << 8) ^ analogRead(A2) ^ (uint16_t)micros() ^ potValue;
   if (!rngState) rngState = 0xACE1;
   resetCounters(song);
   resetCounters(freeRun);
+  setRuns(0);
 
   potFiltered = (uint32_t)analogRead(POT_PIN) << 4;
   potValue = potFiltered >> 4;

@@ -9,7 +9,7 @@ const T = {
     demo: "Mode démo", demoStop: "Quitter la démo",
     noSerial: "Ce navigateur ne sait pas parler au port USB. Ouvre cette page dans <b>Google Chrome</b> ou <b>Microsoft Edge</b> (Safari et Firefox ne le permettent pas). Le mode démo marche partout.",
     resetNote: "La boîte redémarre une seconde au moment de la connexion (elle repasse à l'arrêt) : c'est normal, c'est la puce USB. Connecte-toi avant de jouer, pas en plein morceau.",
-    oldFw: "Ta boîte a le firmware {v}. Les rythmes euclidiens, le MIDI, les mesures et les préréglages demandent la version 2.2 : mets-la à jour plus bas, en un clic.",
+    oldFw: "Ta boîte a le firmware {v}. Le séquenceur et les réglages de cette page demandent la version 2.5 : mets-la à jour plus bas, en un clic.",
     st_off: "Déconnecté", st_wait: "Connexion…", st_ok: "Connecté", st_old: "Connecté (horloge seule)", st_demo: "Démo", st_flash: "Mise à jour…",
     playing: "EN MARCHE", stopped: "À L'ARRÊT", paused: "EN PAUSE", bar: "mesure",
     menu: "MENU", jack: "JACK", preset: "PRÉRÉGLAGE", identify: "IDENTIFIER", identHelp: "seul ce jack bat à chaque temps",
@@ -24,18 +24,18 @@ const T = {
     tempoHelp: "Tape un tempo précis (au dixième) ou tape le rythme sur « Tap ». Le potard reprend la main dès que tu le bouges.",
     jacksTitle: "Les 3 jacks",
     jacksHelp: "Clique un mode : il est envoyé à la boîte et enregistré tout de suite. « Identifier » fait battre ce jack seul pendant 15 s, pour savoir lequel est lequel.",
-    groups: ["Horloges", "Triolets, pointées et divisions libres", "Transport", "Rythmes euclidiens"],
+    groups: ["Horloges", "Triolets, pointées et divisions libres", "Transport", "Séquenceur (notes des pistes)"],
     pulse: "Impulsion", pulseOpts: ["Gate (50 %)", "Trigger (court)"], offset: "Décalage", offNone: "aucun", divN: "N doubles croches",
     expBtn: "Exporter les réglages", impBtn: "Importer des réglages…", impOk: "Réglages importés", impBad: "Fichier de réglages invalide : {e}",
     backupHelp: "Garde ta configuration dans un fichier (.json) : pour la sauvegarder, la partager avec un ami qui a une clockbox, ou la remettre plus tard. Le tempo et la place des jacks sont inclus.", backupTitle: "Sauvegarde",
     euclidTitle: "Rythmes euclidiens",
     euclidHelp: "Un rythme euclidien répartit des coups le plus régulièrement possible sur un nombre de pas : 3 coups sur 8 donnent le tresillo, 5 sur 16 une bossa… Chaque rythme peut sortir sur un jack (mode « Euclide A/B/C ») et/ou jouer une note MIDI, pour piloter une boîte à rythme.",
     euSteps: "Pas", euHits: "Coups", euRot: "Rotation", euDiv: "Durée d'un pas", euMidi: "Jouer une note MIDI",
-    euChannel: "Canal", euNote: "Note", euVel: "Vélocité", prob: "Probabilité",
+    metroCh: "Canal du métronome", euChannel: "Canal", euNote: "Note", euVel: "Vélocité", prob: "Probabilité",
     probHelp: "100 % = toujours. En dessous, des impulsions sont sautées au hasard : le rythme change un peu à chaque fois.",
     probOld: "La probabilité demande le firmware 2.3.", euUsedBy: "sur le jack", euNoJack: "sur aucun jack",
     divs: ["1/16", "1/8", "1/16 triolet", "1/4"],
-    midiTitle: "MIDI et mesure",
+    midiTitle: "MIDI, métronome et mesure",
     timeSig: "Mesure", spp: "Envoyer la position de départ (Song Position) avant Start et Reprendre",
     clockStopped: "Envoyer l'horloge MIDI même à l'arrêt", buttonPauses: "Le bouton met en pause (tenir 1,5 s en pause = retour au début)",
     metro: "Métronome MIDI", metroModes: ["Éteint", "1er temps seulement", "Chaque temps"],
@@ -64,16 +64,16 @@ const T = {
     k_fw: "Firmware", k_bpm: "Tempo", k_meas: "Tempo mesuré (horloge MIDI)", k_state: "Transport", k_pos: "Position",
     k_pot: "Potard", k_btn: "Bouton", down: "enfoncé", up: "relâché",
     noState: "Pas de réponse d'état : la boîte a sans doute un très ancien firmware. Le tempo et le start/stop restent affichés depuis l'horloge MIDI.",
-    modes: ["24 ppqn", "1/16", "1/8", "1/4", "1/2", "Mesure", "Reset", "Run", "1/8 triolet", "1/16 triolet", "1/8 pointée", "Euclide A", "Euclide B", "Euclide C", "Division libre"],
-    modeShort: ["24pq", "1/16", "1/8", "1/4", "1/2", "Mes.", "Reset", "Run", "1/8T", "1/16T", "1/8.", "Eu.A", "Eu.B", "Eu.C", "1/N"],
-    modeDesc: ["DIN sync", "doubles cr.", "croches", "noires", "blanches", "1 / mesure", "au start", "gate", "3 / noire", "6 / noire", "pointée", "rythme A", "rythme B", "rythme C", "1 / N doubles"],
+    modes: ["24 ppqn", "1/16", "1/8", "1/4", "1/2", "Mesure", "Reset", "Run", "1/8 triolet", "1/16 triolet", "1/8 pointée", "Piste 1", "Piste 2", "Piste 3", "Division libre", "Piste 4"],
+    modeShort: ["24pq", "1/16", "1/8", "1/4", "1/2", "Mes.", "Reset", "Run", "1/8T", "1/16T", "1/8.", "Pist1", "Pist2", "Pist3", "1/N", "Pist4"],
+    modeDesc: ["DIN sync", "doubles cr.", "croches", "noires", "blanches", "1 / mesure", "au start", "gate", "3 / noire", "6 / noire", "pointée", "séquenceur", "séquenceur", "séquenceur", "1 / N doubles", "séquenceur"],
   },
   en: {
     title: "clockbox — screen", connect: "Connect the box", disconnect: "Disconnect",
     demo: "Demo mode", demoStop: "Leave demo",
     noSerial: "This browser cannot talk to the USB port. Open this page in <b>Google Chrome</b> or <b>Microsoft Edge</b> (Safari and Firefox cannot). Demo mode works everywhere.",
     resetNote: "The box restarts for a second when the page connects (it goes back to stop): that is the USB chip, it is normal. Connect before playing, not in the middle of a song.",
-    oldFw: "Your box runs firmware {v}. Euclidean rhythms, MIDI, time signatures and presets need version 2.2: update it below, in one click.",
+    oldFw: "Your box runs firmware {v}. The sequencer and the settings on this page need version 2.5: update it below, in one click.",
     st_off: "Disconnected", st_wait: "Connecting…", st_ok: "Connected", st_old: "Connected (clock only)", st_demo: "Demo", st_flash: "Updating…",
     playing: "RUNNING", stopped: "STOPPED", paused: "PAUSED", bar: "bar",
     menu: "MENU", jack: "JACK", preset: "PRESET", identify: "IDENTIFY", identHelp: "only this jack pulses on each beat",
@@ -88,18 +88,18 @@ const T = {
     tempoHelp: "Type an exact tempo (to 0.1) or tap the beat on “Tap”. The pot takes over as soon as you move it.",
     jacksTitle: "The 3 jacks",
     jacksHelp: "Click a mode: it is sent to the box and saved right away. “Identify” makes only this jack pulse for 15 s, to find which is which.",
-    groups: ["Clocks", "Triplets, dotted and free divisions", "Transport", "Euclidean rhythms"],
+    groups: ["Clocks", "Triplets, dotted and free divisions", "Transport", "Sequencer (track notes)"],
     pulse: "Pulse", pulseOpts: ["Gate (50 %)", "Trigger (short)"], offset: "Offset", offNone: "none", divN: "N sixteenths",
     expBtn: "Export settings", impBtn: "Import settings…", impOk: "Settings imported", impBad: "Invalid settings file: {e}",
     backupHelp: "Keep your setup in a file (.json): to back it up, share it with a friend who has a clockbox, or restore it later. Tempo and jack places are included.", backupTitle: "Backup",
     euclidTitle: "Euclidean rhythms",
     euclidHelp: "A Euclidean rhythm spreads hits as evenly as possible over a number of steps: 3 hits over 8 is the tresillo, 5 over 16 a bossa… Each rhythm can go to a jack (mode “Euclid A/B/C”) and/or play a MIDI note, to drive a drum machine.",
     euSteps: "Steps", euHits: "Hits", euRot: "Rotation", euDiv: "Step length", euMidi: "Play a MIDI note",
-    euChannel: "Channel", euNote: "Note", euVel: "Velocity", prob: "Probability",
+    metroCh: "Metronome channel", euChannel: "Channel", euNote: "Note", euVel: "Velocity", prob: "Probability",
     probHelp: "100 % = always. Below that, pulses are skipped at random: the rhythm changes a little every time.",
     probOld: "Probability needs firmware 2.3.", euUsedBy: "on jack", euNoJack: "on no jack",
     divs: ["1/16", "1/8", "1/16 triplet", "1/4"],
-    midiTitle: "MIDI and time signature",
+    midiTitle: "MIDI, metronome and time signature",
     timeSig: "Time signature", spp: "Send the song position before Start and Continue",
     clockStopped: "Send MIDI clock while stopped too", buttonPauses: "The button pauses (hold 1.5 s while paused = back to start)",
     metro: "MIDI metronome", metroModes: ["Off", "Beat 1 only", "Every beat"],
@@ -128,9 +128,9 @@ const T = {
     k_fw: "Firmware", k_bpm: "Tempo", k_meas: "Measured tempo (MIDI clock)", k_state: "Transport", k_pos: "Position",
     k_pot: "Pot", k_btn: "Button", down: "pressed", up: "released",
     noState: "No status reply: the box probably runs a very old firmware. Tempo and start/stop are still shown from the MIDI clock.",
-    modes: ["24 ppqn", "1/16", "1/8", "1/4", "1/2", "Bar", "Reset", "Run", "1/8 triplet", "1/16 triplet", "Dotted 1/8", "Euclid A", "Euclid B", "Euclid C", "Free division"],
-    modeShort: ["24pq", "1/16", "1/8", "1/4", "1/2", "Bar", "Reset", "Run", "1/8T", "1/16T", "1/8.", "Eu.A", "Eu.B", "Eu.C", "1/N"],
-    modeDesc: ["DIN sync", "16ths", "8ths", "quarters", "halves", "1 / bar", "on start", "gate", "3 / quarter", "6 / quarter", "dotted", "rhythm A", "rhythm B", "rhythm C", "1 / N 16ths"],
+    modes: ["24 ppqn", "1/16", "1/8", "1/4", "1/2", "Bar", "Reset", "Run", "1/8 triplet", "1/16 triplet", "Dotted 1/8", "Track 1", "Track 2", "Track 3", "Free division", "Track 4"],
+    modeShort: ["24pq", "1/16", "1/8", "1/4", "1/2", "Bar", "Reset", "Run", "1/8T", "1/16T", "1/8.", "Trk1", "Trk2", "Trk3", "1/N", "Trk4"],
+    modeDesc: ["DIN sync", "16ths", "8ths", "quarters", "halves", "1 / bar", "on start", "gate", "3 / quarter", "6 / quarter", "dotted", "sequencer", "sequencer", "sequencer", "1 / N 16ths", "sequencer"],
   }
 };
 if (window.SITE_T) for (const l in window.SITE_T) Object.assign(T[l], window.SITE_T[l]);
@@ -141,17 +141,16 @@ const tf = (k, o) => t(k).replace(/\{(\w+)\}/g, (_, x) => o[x]);
 
 // ------------------------------------------------------------- constants --
 const LONG_PRESS_MS = 1500, IDENTIFY_MS = 15000;
-const MODE_COUNT = 15;
-const POT_ORDER = [0, 1, 9, 2, 8, 10, 3, 4, 5, 14, 6, 7, 11, 12, 13];
-const MODE_GROUPS = [[0, 1, 2, 3, 4, 5], [9, 8, 10, 14], [6, 7], [11, 12, 13]];
-const PERIOD24 = [1, 6, 12, 24, 48, 0, 0, 0, 8, 4, 18, 0, 0, 0, 0];   // plain clocks, in MIDI clock ticks
+const MODE_COUNT = 16;
+const POT_ORDER = [0, 1, 9, 2, 8, 10, 3, 4, 5, 14, 6, 7, 11, 12, 13, 15];
+const MODE_GROUPS = [[0, 1, 2, 3, 4, 5], [9, 8, 10, 14], [6, 7], [11, 12, 13, 15]];
+const trackOfMode = m => m >= 11 && m <= 13 ? m - 11 : m === 15 ? 3 : -1;
+const PERIOD24 = [1, 6, 12, 24, 48, 0, 0, 0, 8, 4, 18, 0, 0, 0, 0, 0];   // plain clocks, in MIDI clock ticks
 const TIME_SIGS = ["4/4", "3/4", "2/4", "5/4", "6/8", "7/8"];
 const BAR24 = [96, 72, 48, 120, 72, 84], BEAT24 = [24, 24, 24, 24, 36, 12];
-const EU_DIV24 = [6, 12, 4, 24];
 const PRESS_STOPPED = 1, PRESS_MENU = 2, PRESS_PAUSED = 3;
 const STOPPED = 0, PLAYING = 1, PAUSED = 2;
-const CONFIG_SIZE = 50, CONFIG_SIZE_V23 = 41, CONFIG_SIZE_V22 = 35;
-const configSizeFor = fw => fw >= 24 ? CONFIG_SIZE : fw === 23 ? CONFIG_SIZE_V23 : CONFIG_SIZE_V22;
+const CONFIG_SIZE = 23;   // firmware 2.5
 const GM = { 35: "kick", 36: "kick", 37: "rim", 38: "snare", 39: "clap", 40: "snare 2", 41: "tom", 42: "hat", 44: "pedal hat", 45: "tom", 46: "open hat", 47: "tom", 49: "crash", 50: "tom", 51: "ride", 54: "tamb.", 56: "cowbell", 60: "bongo", 62: "conga", 69: "cabasa", 70: "maracas", 75: "claves", 76: "wood hi", 77: "wood lo" };
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const noteName = n => NOTE_NAMES[n % 12] + (Math.floor(n / 12) - 2);   // 60 = C3
@@ -188,28 +187,17 @@ function decodeState(d) {
     modes: [d[20], d[21], d[22]] };
 }
 
-function decodeConfig(d, size = CONFIG_SIZE) {
-  const c = { jackMode: [d[0], d[1], d[2]], timeSig: d[3], clockWhenStopped: d[4], songPosition: d[5], buttonPauses: d[6],
-    metroMode: d[7], metroChannel: d[8], metroNoteDown: d[9], metroNoteBeat: d[10], euclid: [], presetMask: d[size] || 0,
-    jackProb: size >= 41 ? [d[35], d[36], d[37]] : [100, 100, 100],
-    euclidProb: size >= 41 ? [d[38], d[39], d[40]] : [100, 100, 100],
-    jackTrigger: size >= 50 ? [d[41], d[42], d[43]] : [0, 0, 0],
-    jackOffset: size >= 50 ? [d[44], d[45], d[46]] : [0, 0, 0],
-    jackDivision: size >= 50 ? [d[47], d[48], d[49]] : [3, 3, 3] };
-  for (let g = 0; g < 3; g++) {
-    const o = 11 + g * 8;
-    c.euclid.push({ steps: d[o], hits: d[o + 1], rotation: d[o + 2], division: d[o + 3], midi: d[o + 4],
-      channel: d[o + 5], note: d[o + 6], velocity: d[o + 7] });
-  }
-  return c;
+function decodeConfig(d) {
+  return { jackMode: [d[0], d[1], d[2]], timeSig: d[3], clockWhenStopped: d[4], songPosition: d[5], buttonPauses: d[6],
+    metroMode: d[7], metroChannel: d[8], metroNoteDown: d[9], metroNoteBeat: d[10],
+    jackProb: [d[11], d[12], d[13]], jackTrigger: [d[14], d[15], d[16]], jackOffset: [d[17], d[18], d[19]],
+    jackDivision: [d[20], d[21], d[22]], presetMask: d[23] || 0 };
 }
 
 function encodeConfig(c) {
-  const b = [...c.jackMode, c.timeSig, c.clockWhenStopped, c.songPosition, c.buttonPauses,
-    c.metroMode, c.metroChannel, c.metroNoteDown, c.metroNoteBeat];
-  for (const e of c.euclid) b.push(e.steps, e.hits, e.rotation, e.division, e.midi, e.channel, e.note, e.velocity);
-  b.push(...c.jackProb, ...c.euclidProb, ...c.jackTrigger, ...c.jackOffset, ...c.jackDivision);   // older firmware ignores the tail
-  return b;
+  return [...c.jackMode, c.timeSig, c.clockWhenStopped, c.songPosition, c.buttonPauses,
+    c.metroMode, c.metroChannel, c.metroNoteDown, c.metroNoteBeat,
+    ...c.jackProb, ...c.jackTrigger, ...c.jackOffset, ...c.jackDivision];
 }
 
 async function send(bytes) {
@@ -222,7 +210,6 @@ async function send(bytes) {
 function editConfig(fn) {
   if (!C) return;
   fn(C);
-  for (const e of C.euclid) { e.hits = Math.min(e.hits, e.steps); e.rotation = Math.min(e.rotation, e.steps - 1); }
   renderSettings(true);
   clearTimeout(configTimer);
   configTimer = setTimeout(() => { configTimer = null; send(enc(0x14, ...encodeConfig(C))); }, 250);
@@ -234,7 +221,10 @@ function onState(d) {
   if (S.button && !(prev && prev.button)) pressSince = performance.now();
   if (S.ident >= 0 && !(prev && prev.ident === S.ident)) identSince = performance.now();
   if (C) C.jackMode = S.modes.slice();
-  if (conn === "wait" || conn === "old") { setConn(S.fwNum >= 22 ? "ok" : "old"); log("état reçu, firmware " + S.fw); }
+  if (conn === "wait" || conn === "old") {
+    setConn(S.fwNum >= 22 ? "ok" : "old"); log("état reçu, firmware " + S.fw);
+    if (S.fwNum >= 25 && !demo) seqRequest();
+  }
   if (prev) {
     if (prev.transport !== S.transport) log(["stop", "start", "pause"][S.transport]);
     if (prev.menu !== S.menu) log(S.menu ? "menu ouvert" : "menu fermé, réglages enregistrés");
@@ -246,7 +236,8 @@ function onState(d) {
 
 function onConfig(d) {
   if (configTimer) return;   // a local edit is about to be sent; the box will echo it
-  C = decodeConfig(d, configSizeFor(S ? S.fwNum : 24));
+  if (S && S.fwNum < 25) { C = null; return; }   // older layouts: update the firmware to edit
+  C = decodeConfig(d);
   if (S) C.jackMode = S.modes.slice();
   renderPanel(); renderSettings();
 }
@@ -262,20 +253,21 @@ function makeParser() {
         inSx = false;
         if (sx[0] === 0x7D && sx[1] === 0x43 && sx[2] === 0x42) {
           if (sx[3] === 0x01 && sx.length >= 24) onState(sx.slice(4));
-          if (sx[3] === 0x02 && sx.length >= 4 + CONFIG_SIZE_V22) onConfig(sx.slice(4));
+          if (sx[3] === 0x02 && sx.length >= 4 + CONFIG_SIZE) onConfig(sx.slice(4));
+          if (sx[3] === 0x03) seqOnTrack(sx.slice(4));
+          if (sx[3] === 0x04 && sx.length >= 11) seqOnStep(sx.slice(4));
+          if (sx[3] === 0x05 && sx.length >= 9) seqOnPlayhead(sx.slice(4), now);
+          if (sx[3] === 0x06 && sx.length >= 6) seqOnCustom(sx.slice(4));
         }
         return;
       }
-      if (b & 0x80 || sx.length > 80) { inSx = false; } else { sx.push(b); return; }
+      if (b & 0x80 || sx.length > 40) { inSx = false; } else { sx.push(b); return; }
     }
     if (b & 0x80) { status = b; data = []; return; }
     data.push(b);
     if (status === 0xF2 && data.length === 2) { clock.spp = (data[0] | (data[1] << 7)) * 6; status = 0; }
     else if ((status & 0xE0) === 0x80 && data.length === 2) {   // note on/off
-      if ((status & 0xF0) === 0x90 && data[1] > 0) {
-        clock.midiAt = now;
-        if (C) C.euclid.forEach((e, g) => { if (e.midi && e.note === data[0] && e.channel === (status & 15)) clock.notes[g] = now; });
-      }
+      if ((status & 0xF0) === 0x90 && data[1] > 0) clock.midiAt = now;
       data = [];
     }
   };
@@ -500,11 +492,8 @@ async function flashFromSite() {
 // -------------------------------------------------------------------- demo --
 function defaultConfig() {
   return { jackMode: [1, 6, 2], timeSig: 0, clockWhenStopped: 1, songPosition: 1, buttonPauses: 0,
-    jackProb: [100, 100, 100], euclidProb: [100, 100, 70], jackTrigger: [0, 0, 0], jackOffset: [0, 0, 0], jackDivision: [3, 3, 3],
-    metroMode: 0, metroChannel: 9, metroNoteDown: 76, metroNoteBeat: 77, presetMask: 0,
-    euclid: [{ steps: 16, hits: 5, rotation: 0, division: 0, midi: 1, channel: 9, note: 36, velocity: 110 },
-             { steps: 8, hits: 3, rotation: 0, division: 0, midi: 1, channel: 9, note: 38, velocity: 100 },
-             { steps: 16, hits: 7, rotation: 0, division: 0, midi: 0, channel: 9, note: 42, velocity: 80 }] };
+    jackProb: [100, 100, 100], jackTrigger: [0, 0, 0], jackOffset: [0, 0, 0], jackDivision: [3, 3, 3],
+    metroMode: 0, metroChannel: 9, metroNoteDown: 76, metroNoteBeat: 77, presetMask: 0 };
 }
 function startDemo() {
   if (link) disconnect();
@@ -513,6 +502,7 @@ function startDemo() {
          press: 0, tempoArmed: true, menuArmed: false, ident: -1, pos: [0, 1, 2], tick: 0 },
     C: defaultConfig() };
   demo.C.jackMode = demo.D.modes.slice();
+  defaultSequence(); SEQ.loaded = true;
   setConn("demo"); log("démo : la boîte est simulée — clique le bouton rouge pour start/stop");
   demoPush();
   const tick = () => {
@@ -521,11 +511,7 @@ function startDemo() {
     onRealtime(0xF8, now);
     if (demo.D.transport === PLAYING) {
       demo.D.tick++;
-      const st = clock.songTick;
-      demo.C.euclid.forEach((e, g) => {
-        const div = EU_DIV24[e.division];
-        if (e.midi && st % div === 0 && euHit(e, Math.floor(st / div) % e.steps) && Math.random() * 100 < demo.C.euclidProb[g]) { clock.notes[g] = now; clock.midiAt = now; }
-      });
+      seqDemoTick(clock.songTick, now);
     }
     demo.timer = setTimeout(tick, 60000 / (demo.D.bpm * 24));
   };
@@ -539,7 +525,7 @@ function stopDemo() {
 }
 function demoPush() {
   const D = demo.D, b10 = Math.round(D.bpm * 10), p16 = Math.floor(Math.max(0, clock.songTick) / 6);
-  onState([2, 4, b10 >> 7, b10 & 0x7F, D.transport, +D.menu, D.menuPage, D.menuPreset, D.pot >> 7, D.pot & 0x7F,
+  onState([2, 5, b10 >> 7, b10 & 0x7F, D.transport, +D.menu, D.menuPage, D.menuPreset, D.pot >> 7, D.pot & 0x7F,
     +D.button, D.press, +D.tempoArmed, +D.menuArmed, D.ident < 0 ? 0x7F : D.ident, ...D.pos, p16 >> 7, p16 & 0x7F, ...D.modes]);
   const mask = demo.presets.reduce((m, p, i) => m | (p ? 1 << i : 0), 0);
   configTimer = null;
@@ -564,6 +550,7 @@ function demoCommand(bytes) {
   }
   if (c === 0x13) D.pos = [d[0], d[1], d[2]];
   if (c === 0x14) { const n = decodeConfig([...d, 0]); demo.C = n; D.modes = n.jackMode.slice(); }
+  if (c >= 0x18 && c <= 0x1B) return;   // sequence edits: the page already holds them
   if (c === 0x15) { D.bpm = ((d[0] << 7) | d[1]) / 10; D.tempoArmed = false; }
   if (c === 0x16) return demoTransport(d[0]);
   if (c === 0x17) {
@@ -591,11 +578,14 @@ function levelAt(mode, t24, preview, now, j) {
   if (PERIOD24[mode]) { L = PERIOD24[mode]; ph = wrap(t24, L); }
   else if (mode === 5) { L = BAR24[ts]; ph = wrap(t24, L); }
   else if (mode === 14) { L = (C ? C.jackDivision[j != null ? j : 0] : 3) * 6; ph = wrap(t24, L); }
-  else {
-    if (!C) return false;
-    const e = C.euclid[mode - 11];
-    L = EU_DIV24[e.division]; ph = t24 % L;
-    hit = euHit(e, Math.floor(t24 / L) % e.steps);
+  else {   // a sequencer track
+    const tr = trackOfMode(mode);
+    if (preview) {
+      if (!SEQ.tracks || !SEQ.tracks[tr] || !SEQ.tracks[tr].mode) return false;
+      const k = SEQ.tracks[tr], d = TRACK_DIV24[k.division];
+      return hitOf(tr, Math.floor(t24 / d) % k.length) && t24 % d < d / 2;
+    }
+    return trackGateOn(tr, now);
   }
   if (L === 1) return hit && (t24 & 1) === 0;
   return hit && (trig ? ph === 0 : ph < L / 2);
@@ -707,7 +697,7 @@ function frame() {
   const frac = holding ? Math.min(1, (now - pressSince) / LONG_PRESS_MS) : 0;
   $("ring").setAttribute("stroke-dasharray", `${frac * 113} 200`);
 
-  renderEuclidLive(now);
+  seqRenderHeads();
   renderInfo();
   requestAnimationFrame(frame);
 }
@@ -782,24 +772,6 @@ function field(label, input) { return `<label class="fld"><span>${esc(label)}</s
 function buildSettings() {
   built = true;
   const chOpts = Array.from({ length: 16 }, (_, i) => `<option value="${i}">${i + 1}</option>`).join("");
-  $("euclids").innerHTML = [0, 1, 2].map(g => `
-    <div class="eu" data-g="${g}">
-      <div class="eu-head"><b>${"ABC"[g]}</b><span class="eu-used"></span></div>
-      <svg class="ring" viewBox="-50 -50 100 100" aria-hidden="true"></svg>
-      <div class="eu-fields">
-        ${field(t("euSteps"), `<input type="range" min="1" max="32" data-k="steps"><output></output>`)}
-        ${field(t("euHits"), `<input type="range" min="0" max="16" data-k="hits"><output></output>`)}
-        ${field(t("euRot"), `<input type="range" min="0" max="15" data-k="rotation"><output></output>`)}
-        ${field(t("prob"), `<input type="range" min="0" max="100" step="5" data-k="prob"><output></output>`)}
-        ${field(t("euDiv"), `<select data-k="division">${t("divs").map((d, i) => `<option value="${i}">${esc(d)}</option>`).join("")}</select>`)}
-        <label class="chk"><input type="checkbox" data-k="midi"> ${esc(t("euMidi"))}</label>
-        <div class="midi-row">
-          ${field(t("euChannel"), `<select data-k="channel">${chOpts}</select>`)}
-          ${field(t("euNote"), `<input type="number" min="0" max="127" data-k="note"><output class="nn"></output>`)}
-          ${field(t("euVel"), `<input type="range" min="1" max="127" data-k="velocity"><output></output>`)}
-        </div>
-      </div>
-    </div>`).join("");
   $("midiFields").innerHTML = `
     ${field(t("timeSig"), `<select data-c="timeSig">${TIME_SIGS.map((s, i) => `<option value="${i}">${s}</option>`).join("")}</select>`)}
     <label class="chk"><input type="checkbox" data-c="songPosition"> ${esc(t("spp"))}</label>
@@ -807,7 +779,7 @@ function buildSettings() {
     <label class="chk"><input type="checkbox" data-c="buttonPauses"> ${esc(t("buttonPauses"))}</label>
     ${field(t("metro"), `<select data-c="metroMode">${t("metroModes").map((s, i) => `<option value="${i}">${esc(s)}</option>`).join("")}</select>`)}
     <div class="midi-row">
-      ${field(t("euChannel"), `<select data-c="metroChannel">${chOpts}</select>`)}
+      ${field(t("metroCh"), `<select data-c="metroChannel">${chOpts}</select>`)}
       ${field(t("metroDown"), `<input type="number" min="0" max="127" data-c="metroNoteDown"><output class="nn"></output>`)}
       ${field(t("metroBeat"), `<input type="number" min="0" max="127" data-c="metroNoteBeat"><output class="nn"></output>`)}
     </div>`;
@@ -823,25 +795,11 @@ function setVal(el, v) {
 }
 function renderSettings(force) {
   if (!built) buildSettings();
-  const has = !!C && !!S && S.fwNum >= 22;
+  const has = !!C && !!S && S.fwNum >= 25;
   document.querySelectorAll(".needs-config").forEach(c => c.classList.toggle("disabled", !has));
   document.querySelectorAll(".needs-config input, .needs-config select, .needs-config button").forEach(el => { el.disabled = !has; });
-  if (!has) { drawRings(); return; }
-  document.querySelectorAll(".eu").forEach(box => {
-    const g = +box.dataset.g, e = C.euclid[g];
-    box.querySelectorAll("[data-k]").forEach(el => {
-      const k = el.dataset.k, v = k === "prob" ? C.euclidProb[g] : e[k];
-      if (k === "hits") el.max = e.steps;
-      if (k === "rotation") el.max = Math.max(0, e.steps - 1);
-      if (k === "prob") { el.disabled = S.fwNum < 23; el.title = S.fwNum < 23 ? t("probOld") : ""; }
-      setVal(el, v);
-      const out = el.nextElementSibling;
-      if (out && out.tagName === "OUTPUT") out.textContent = k === "note" ? noteLabel(e.note, e.channel) : k === "prob" ? v + " %" : v;
-    });
-    box.querySelector(".midi-row").classList.toggle("off", !e.midi);
-    const jacks = C.jackMode.map((m, j) => m === 11 + g ? j : -1).filter(j => j >= 0);
-    box.querySelector(".eu-used").textContent = jacks.length ? `${t("euUsedBy")} ${jacks.map(j => j + 1).join(", ")}` : t("euNoJack");
-  });
+  seqRender();
+  if (!has) return;
   document.querySelectorAll("#midiFields [data-c]").forEach(el => {
     setVal(el, C[el.dataset.c]);
     const out = el.nextElementSibling;
@@ -856,37 +814,6 @@ function renderSettings(force) {
   });
   if (document.activeElement !== $("tempoInput") && S) $("tempoInput").value = fmtBpm(S.bpm);
   syncJackProb();
-  drawRings();
-}
-
-function drawRings() {
-  document.querySelectorAll(".eu").forEach(box => {
-    const g = +box.dataset.g, svg = box.querySelector(".ring");
-    const e = C ? C.euclid[g] : { steps: 16, hits: 0, rotation: 0 };
-    const prob = C ? C.euclidProb[g] : 100;
-    const key = [e.steps, e.hits, e.rotation, prob].join();
-    if (svg.dataset.key === key) return;
-    svg.dataset.key = key;
-    let html = `<circle r="38" class="track"/>`;
-    for (let i = 0; i < e.steps; i++) {
-      const a = (i / e.steps) * Math.PI * 2 - Math.PI / 2, x = Math.cos(a) * 38, y = Math.sin(a) * 38;
-      const hit = euHit(e, i);
-      html += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${e.steps > 24 ? 3.2 : 4.4}" class="${hit ? "hit" : "rest"}" data-i="${i}"${hit && prob < 100 ? ` style="fill-opacity:${(0.25 + 0.75 * prob / 100).toFixed(2)}"` : ""}/>`;
-    }
-    html += `<text y="${prob < 100 ? 0 : 5}" class="lbl">${e.hits}/${e.steps}</text>${prob < 100 ? `<text y="13" class="lbl sm">${prob} %</text>` : ""}`;
-    svg.innerHTML = html;
-  });
-}
-
-function renderEuclidLive(now) {
-  if (!C) return;
-  const playing = transportOf() === PLAYING, st = Math.max(0, clock.songTick);
-  document.querySelectorAll(".eu").forEach(box => {
-    const g = +box.dataset.g, e = C.euclid[g], div = EU_DIV24[e.division];
-    const cur = playing ? Math.floor(st / div) % e.steps : -1;
-    box.querySelectorAll(".ring [data-i]").forEach(c => c.classList.toggle("now", +c.dataset.i === cur));
-    box.classList.toggle("sounding", now - clock.notes[g] < 100);
-  });
 }
 
 function offsetLabel(n) {
@@ -909,7 +836,8 @@ function syncJackProb() {
 function exportSettings() {
   if (!C || !S) return;
   const { presetMask, ...config } = C;
-  const data = { app: "clockbox", format: 1, firmware: S.fw, tempo: S.bpm, positions: S.pos, config };
+  const data = { app: "clockbox", format: 2, firmware: S.fw, tempo: S.bpm, positions: S.pos, config,
+    sequence: SEQ.tracks ? { tracks: SEQ.tracks, steps: SEQ.steps, custom: SEQ.custom } : undefined };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -917,6 +845,23 @@ function exportSettings() {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   log("réglages exportés");
+}
+
+function checkSequence(q) {
+  const int = (v, lo, hi) => { if (!Number.isInteger(v) || v < lo || v > hi) throw new Error(`valeur hors limites (${v})`); return v; };
+  if (!Array.isArray(q.tracks) || q.tracks.length !== 4 || !Array.isArray(q.steps) || q.steps.length !== 4) throw new Error("séquence invalide");
+  const limits = { mode: 2, length: 32, hits: 32, rotation: 31, division: 4, channel: 16, midi: 1, scale: SCALES.scales.length - 1, root: 11,
+    transpose: 48, direction: 3, prob: 100, randNote: 100, randRange: 24, humanize: 40, accent: 60 };
+  const tracks = q.tracks.map(k => {
+    const o = Object.fromEntries(TRACK_KEYS.map(key => [key, int(k[key], key === "length" ? 1 : 0, limits[key])]));
+    o.hits = Math.min(o.hits, o.length); o.rotation = Math.min(o.rotation, o.length - 1);
+    return o;
+  });
+  const steps = q.steps.map(tr => {
+    if (!Array.isArray(tr) || tr.length !== 32) throw new Error("pas invalides");
+    return tr.map(b => { if (!Array.isArray(b) || b.length !== 4) throw new Error("pas invalide"); return b.map(x => int(x, 0, 255)); });
+  });
+  return { tracks, steps, custom: q.custom == null ? 0xFFF : int(q.custom, 1, 0xFFF) };
 }
 
 function checkConfig(src) {
@@ -928,16 +873,7 @@ function checkConfig(src) {
   c.jackMode = arr(src.jackMode, 3, 0, MODE_COUNT - 1, c.jackMode);
   for (const [k, hi] of [["timeSig", 5], ["clockWhenStopped", 1], ["songPosition", 1], ["buttonPauses", 1], ["metroMode", 2], ["metroChannel", 15], ["metroNoteDown", 127], ["metroNoteBeat", 127]])
     if (src[k] != null) c[k] = int(src[k], 0, hi);
-  if (src.euclid) {
-    if (!Array.isArray(src.euclid) || src.euclid.length !== 3) throw new Error("rythmes invalides");
-    c.euclid = src.euclid.map(e => {
-      const steps = int(e.steps, 1, 32);
-      return { steps, hits: int(e.hits, 0, steps), rotation: int(e.rotation, 0, steps - 1), division: int(e.division, 0, 3),
-        midi: int(e.midi, 0, 1), channel: int(e.channel, 0, 15), note: int(e.note, 0, 127), velocity: int(e.velocity, 1, 127) };
-    });
-  }
   c.jackProb = arr(src.jackProb, 3, 0, 100, c.jackProb);
-  c.euclidProb = arr(src.euclidProb, 3, 0, 100, c.euclidProb);
   c.jackTrigger = arr(src.jackTrigger, 3, 0, 1, c.jackTrigger);
   c.jackOffset = arr(src.jackOffset, 3, 0, 15, c.jackOffset);
   c.jackDivision = arr(src.jackDivision, 3, 1, 64, c.jackDivision);
@@ -949,9 +885,10 @@ async function importSettings(file) {
     const data = JSON.parse(await file.text());
     if (!data || data.app !== "clockbox" || !data.config) throw new Error("ce n'est pas un fichier clockbox");
     const c = checkConfig(data.config);
-    if (S && S.fwNum < 24) c.jackMode = c.jackMode.map(m => m < (S.fwNum >= 22 ? 14 : 8) ? m : 1);
+    const q = data.sequence ? checkSequence(data.sequence) : null;
+    if (S && S.fwNum < 25) throw new Error(t("seqOld"));
     await send(enc(0x14, ...encodeConfig(c)));
-    for (let j = 0; j < 3; j++) await send(enc(0x11, j, c.jackMode[j]));
+    if (q) { SEQ.tracks = q.tracks; SEQ.steps = q.steps; SEQ.custom = q.custom; seqRender(); await seqSendAll(); }
     const pos = data.positions;
     if (Array.isArray(pos) && pos.length === 3 && [...pos].sort().join() === "0,1,2") await send(enc(0x13, ...pos));
     if (typeof data.tempo === "number" && data.tempo >= 20 && data.tempo <= 300) sendTempo(data.tempo);
@@ -985,13 +922,6 @@ $("jackRows").addEventListener("input", e => {
     const v = Math.round(+el.value);
     if (v >= 1 && v <= 64) editConfig(c => { c.jackDivision[+el.dataset.jn] = v; });
   }
-});
-$("euclids").addEventListener("input", e => {
-  const el = e.target.closest("[data-k]"); if (!el) return;
-  const g = +el.closest(".eu").dataset.g, k = el.dataset.k;
-  let v = el.type === "checkbox" ? (el.checked ? 1 : 0) : Math.round(+el.value);
-  if (k === "note") v = Math.max(0, Math.min(127, v || 0));
-  editConfig(c => { if (k === "prob") c.euclidProb[g] = v; else c.euclid[g][k] = v; });
 });
 $("midiFields").addEventListener("input", e => {
   const el = e.target.closest("[data-c]"); if (!el) return;
@@ -1066,6 +996,8 @@ $("connect").addEventListener("click", () => {
 });
 $("demo").addEventListener("click", () => demo ? stopDemo() : startDemo());
 
+function init() {
+seqBind();
 applyLang();
 if (!("serial" in navigator)) { $("noSerial").hidden = false; $("connect").disabled = true; $("fwUpdate").disabled = true; }
 fetch("firmware/version.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null)
@@ -1073,3 +1005,5 @@ fetch("firmware/version.json", { cache: "no-store" }).then(r => r.ok ? r.json() 
 setInterval(renderFwVersions, 1000);
 startDemo();   // the home page shows the box running; connecting replaces the demo
 requestAnimationFrame(frame);
+}
+window.addEventListener("load", init);

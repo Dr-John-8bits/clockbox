@@ -234,3 +234,43 @@
   .jx { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0 14px; }
   .jx .fld { grid-template-columns: auto 1fr; }
   .jx select, .jx input { width: 100%; }
+
+  /* -------------------------------------------------- sequencer (v2.5) -- */
+  #seq .ttabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+  #seq .ttab { position: relative; text-align: left; padding: 8px 12px; display: grid; gap: 2px; }
+  #seq .ttab span { font-size: 12px; color: var(--muted); }
+  #seq .ttab.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  #seq .ttab .dot { position: absolute; right: 10px; top: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  #seq .ttab .dot.lit { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  #seq .tform { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0 22px; margin-bottom: 8px; }
+  #seq .tform .fld, #seq .insp .fld { grid-template-columns: 9.5em 1fr auto; }
+  #seq .tform select { width: 100%; }
+  #seq .custom { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 4px 0 10px; }
+  #seq .custom .small { margin-right: 6px; }
+  #seq .custom button { padding: 4px 7px; font-size: 12px; }
+  #seq .custom button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #seq .grid { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 4px; margin: 12px 0; }
+  @media (max-width: 760px) { #seq .grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+  #seq .cell { padding: 6px 2px; min-height: 46px; display: grid; align-content: center; justify-items: center; gap: 1px;
+    font-size: 11px; border-radius: 6px; background: var(--bg); position: relative; }
+  #seq .cell:nth-child(4n+1) { border-left-width: 3px; }
+  #seq .cell.hit { background: color-mix(in srgb, var(--accent) calc(var(--p) * 100%), var(--surface)); color: #fff; border-color: var(--accent); }
+  #seq .cell.out { opacity: .3; }
+  #seq .cell.sel { outline: 2px solid var(--text); outline-offset: 1px; }
+  #seq .cell.head { box-shadow: 0 0 0 3px #f5d36b; }
+  #seq .cell .n { font-weight: 600; }
+  #seq .cell .m { font-size: 10px; opacity: .85; min-height: 1em; }
+  #seq .insp { border-top: 1px solid var(--line); padding-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0 22px; }
+  #seq .insp > b { grid-column: 1 / -1; font-size: 15px; }
+  #seq .insp input[type="number"] { width: 5em; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
+  #seq .sbtns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  #seq .sbtns button { font-size: 13px; padding: 6px 10px; }
+  #seq .tform { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 18px; }
+  #seq .grp2 { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--bg); }
+  #seq .grp2 h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+  #seq .chk.big { font-size: 15px; font-weight: 600; }
+  #seq .warn { color: var(--accent); font-size: 13px; font-weight: 600; margin: 4px 0; }
+  #seq .ok { color: var(--ok); font-size: 13px; margin: 4px 0; }
+  #seq .nbtns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 2px 0 6px; }
+  #seq .nbtns button { padding: 4px 10px; font-size: 13px; }
+  #seq .insp select[data-sk="note"] { min-width: 7em; }

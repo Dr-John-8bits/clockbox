@@ -55,7 +55,7 @@ Chaque jack a son propre **mode**. Voici tous les modes, dans l'ordre où ils d�
 | **Division libre** | 1 impulsion toutes les N doubles croches (N de 1 à 64, réglé sur l'écran) | Des polyrythmes : avec N = 3, 5 ou 7, l'impulsion tourne contre la mesure et retombe sur le 1er temps de temps en temps |
 | **Reset** | 1 seule impulsion courte, au moment du Start | L'entrée « reset » d'un séquenceur, pour qu'il reparte du pas 1 en même temps que tes machines MIDI |
 | **Run** | Tension haute tant que ça tourne, 0 V à l'arrêt ou en pause | L'entrée « run » ou « start/stop » de certains séquenceurs |
-| **Euclide A, B, C** | Le rythme euclidien A, B ou C (section 4) | Déclencher une enveloppe, un module de percussion… |
+| **Piste 1, 2, 3, 4** | Une impulsion à chaque note jouée par cette piste du séquenceur (section 4), avec ses probabilités et ses sous-pas | Le même rythme sur le modulaire et sur tes synthés MIDI |
 
 ### Impulsion : gate ou trigger
 Pour chaque jack, sur l'écran :
@@ -67,7 +67,7 @@ Pour chaque jack, sur l'écran, tu peux **retarder** les impulsions de 0 à 15 d
 - **1/4 décalé d'une croche (1/8)** : les impulsions tombent entre les temps, sur les contretemps. Idéal pour un charleston ouvert ou un « tchak » ;
 - **Mesure décalée d'une noire** : l'impulsion tombe sur le 2e temps au lieu du 1er.
 
-Le décalage marche pour les horloges, la mesure et la division libre. Pour les rythmes euclidiens, c'est la **rotation** qui joue ce rôle (section 4).
+Le décalage marche pour les horloges, la mesure et la division libre. Pour les pistes du séquenceur, c'est leur propre réglage qui compte (section 4).
 
 ### La probabilité
 Chaque jack a aussi une **probabilité**, de 0 à 100 %, réglable sur l'écran (section 5), sous les modes du jack :
@@ -104,7 +104,7 @@ Le menu a **4 pages** : **jack 1**, **jack 2**, **jack 3**, puis **préréglage*
 Le jack que tu règles est **le seul qui envoie un signal** pendant le menu : branché sur un module, tu entends ou vois tout de suite le résultat.
 
 ### Changer le réglage
-- **Tourne le potard.** Sur une page de jack, sa course est découpée en zones, une par mode, dans l'ordre du tableau de la section 2 : tout à gauche = 24 ppqn, tout à droite = Euclide C. Sur la page des préréglages, il y a 4 zones : 1, 2, 3, 4.
+- **Tourne le potard.** Sur une page de jack, sa course est découpée en zones, une par mode, dans l'ordre du tableau de la section 2 : tout à gauche = 24 ppqn, tout à droite = Piste 4. Sur la page des préréglages, il y a 4 zones : 1, 2, 3, 4.
 - **Pourquoi rien ne bouge au début ?** En entrant dans le menu, le potard est là où tu l'avais laissé pour le tempo. Pour ne pas changer le réglage par accident, la boîte attend que **tu tournes un peu le potard** avant de le prendre en compte. Bouge-le d'un petit cran, et ensuite il répond normalement.
 
 ### Passer à la page suivante
@@ -131,34 +131,45 @@ Le jack que tu règles est **le seul qui envoie un signal** pendant le menu : br
 
 ---
 
-## 4. Les rythmes euclidiens
+## 4. Le séquenceur
 
-Un rythme euclidien répartit un nombre de **coups** le plus régulièrement possible sur un nombre de **pas**. C'est une façon très simple de fabriquer des rythmes qui sonnent tout de suite « juste » :
+La boîte contient un **séquenceur de 4 pistes**. Chaque piste joue des **notes MIDI** sur le synthé de ton choix, et un jack peut suivre son rythme (mode « Piste 1 » à « Piste 4 », section 2). Il se règle **sur l'écran** (section 5), carte « Séquenceur ». Une fois réglé, il est gardé dans la boîte et joue sans ordinateur.
 
-| Coups / pas | Ce que ça donne |
-|---|---|
-| 3 / 8 | le tresillo (rythme de base de la musique cubaine) |
-| 5 / 8 | le cinquillo |
-| 4 / 16 | un coup sur chaque temps (« four on the floor ») |
-| 5 / 16 | une bossa nova |
-| 7 / 16 | une samba |
+### Faire jouer une piste sur un synthé
+1. Branche la prise MIDI de la boîte sur l'entrée MIDI du synthé.
+2. Dans la carte Séquenceur, choisis la piste, puis, dans **Sortie** : coche **« Jouer en MIDI »** et choisis le **canal** du synthé. Une ligne verte confirme « Joue sur le canal… ».
+3. Lance la boîte (Start) : la piste joue.
 
-La boîte a **3 rythmes : A, B et C**. Chacun se règle **sur l'écran** (section 5), carte « Rythmes euclidiens » :
-- **Pas** : la longueur du rythme (1 à 32) ;
-- **Coups** : combien de coups dedans ;
-- **Rotation** : décale le rythme, pour commencer ailleurs que sur le premier coup ;
-- **Probabilité** : la chance (0 à 100 %) que chaque coup soit vraiment joué. À 100 %, le rythme est toujours le même ; en dessous, des coups sautent au hasard, sur le jack comme en MIDI. Sur le cercle, les coups pâlissent quand la probabilité baisse ;
-- **Durée d'un pas** : 1/16 (le plus courant), 1/8, 1/16 triolet ou 1/4.
+> Attention : le canal de la carte « MIDI, métronome et mesure » est celui du **métronome**, pas celui des pistes.
 
-Le cercle dessine le rythme : les points rouges sont les coups, et le point entouré avance en direct pendant que la boîte tourne.
+Chaque piste a son canal : avec 2 pistes sur 2 canaux, tu fais jouer **2 synthés en même temps**, avec 2 séquences différentes. Le canal **ALL** envoie la même note aux 16 canaux.
 
-**Deux façons de s'en servir, en même temps si tu veux :**
-1. **Sur un jack** : donne au jack le mode « Euclide A » (ou B, C). Il envoie une impulsion à chaque coup. Branche-le sur le déclencheur d'une enveloppe ou d'un module de percussion.
-2. **En notes MIDI** : coche « Jouer une note MIDI » et choisis le **canal**, la **note** et la **vélocité**. La boîte joue cette note à chaque coup, sur ses 2 prises MIDI. Sur le canal 10 (la batterie dans la norme General MIDI), l'écran indique le son : 36 = grosse caisse, 38 = caisse claire, 42 = charleston…
+### Les deux façons d'écrire une piste
+- **Pas à pas** : jusqu'à 32 pas ; tu allumes les pas qui jouent et tu choisis la note de chacun.
+- **Euclidien** : tu choisis un nombre de **coups** et la boîte les répartit le plus régulièrement possible sur la longueur. 3 coups sur 8 donnent le tresillo, 5 sur 16 une bossa, 4 sur 16 un coup par temps… La **rotation** décale le rythme. Chaque coup joue la note du pas où il tombe.
 
-Par exemple, avec A = 5/16 sur la grosse caisse, B = 3/8 sur la caisse claire et C = 7/16 sur le charleston, tous en MIDI sur le canal 10, ta boîte à rythme joue toute seule, au tempo de la clockbox.
+### Les réglages d'une piste
+- **Longueur** (1 à 32 pas), **durée d'un pas** (1/16, 1/8, 1/16 triolet, 1/4, 1/32) et **sens de lecture** (avant, arrière, aller-retour, hasard). Des pistes de longueurs différentes se décalent entre elles : c'est une source de polyrythmes.
+- **Gamme et tonique** : les 91 gammes de nos synthés FM-1 Rhizome et Monades (majeure, mineure, modes, pentatoniques, blues, bebop, ragas, maqams, japonaises, microtonales, et une gamme CUSTOM où tu choisis toi-même les notes). Les notes de la piste sont toujours ramenées dans la gamme : **impossible de jouer faux**. Les ragas ont une forme montante et une forme descendante, et la boîte choisit la bonne selon le sens de la mélodie.
+- **Gammes microtonales** (maqams en quarts de ton, 19 et 24 tons, intonation juste…) : la boîte envoie un **pitch bend** avant chaque note. Règle la plage de pitch bend de ton synthé sur ±2 demi-tons. Le pitch bend touche tout un canal : pour jouer plusieurs notes microtonales à la fois, répartis-les sur plusieurs canaux.
+- **Transposition** : ±24 demi-tons.
+- **Variations** :
+  - **probabilité de la piste** : la chance que chaque pas joue ;
+  - **notes aléatoires** : la chance qu'un pas joue une autre note de la gamme, dans l'**étendue** choisie ;
+  - **humanisation** : une petite variation de vélocité ;
+  - **accent** : le premier coup de chaque tour est plus fort.
 
-> Les rythmes se règlent seulement sur l'écran. Une fois réglés, ils restent dans la boîte, et le menu de la boîte peut les mettre sur un jack ou rappeler un préréglage.
+### Les réglages d'un pas
+- **Note** : seules les notes de la gamme sont proposées.
+- **Vélocité**.
+- **Canal** : celui de la piste, ou un autre. Un pas peut ainsi jouer sur un autre synthé que le reste de la piste.
+- **Probabilité** : de 100 % à 13 %.
+- **Sous-pas** : 1 à 4 notes rapides dans la durée du pas, pour des roulements.
+- **Longueur de note** : 25, 50, 75 ou 95 % du pas.
+- **Note aléatoire** : ce pas joue toujours une note au hasard dans la gamme.
+
+### Garder ses séquences
+La boîte garde **une** séquence (les 4 pistes) dans sa mémoire. Pour en garder d'autres, utilise « Exporter les réglages » (section 5) : le fichier contient aussi la séquence, et « Importer » la remet dans la boîte. Les 4 préréglages, eux, gardent les réglages des jacks, du MIDI et le tempo, mais pas la séquence.
 
 ---
 
@@ -180,13 +191,13 @@ La boîte n'a pas d'écran, mais l'ordinateur peut en faire un : une page qui af
 ### Les réglages
 - **Transport et tempo** : Start, Pause / Reprendre, Stop, Début. Un **tempo précis** au dixième (par exemple 92,5) et un bouton **Tap** pour taper le tempo. Le potard reprend la main dès que tu le bouges.
 - **Les 3 jacks** : clique sur le mode voulu, il est envoyé et **enregistré tout de suite**. Dessous : la **probabilité**, l'**impulsion** (gate ou trigger), le **décalage**, et **N** pour la division libre. « Identifier » fait battre ce jack seul pendant 15 s ; « Place » indique où il est sur la boîte.
-- **Rythmes euclidiens** : voir section 4.
-- **MIDI et mesure** :
+- **Séquenceur** : voir section 4.
+- **MIDI, métronome et mesure** :
   - la **mesure** : 4/4, 3/4, 2/4, 5/4, 6/8 ou 7/8 (pour le mode Mesure, le Reset, la LED et le métronome) ;
   - **envoyer la position de départ** : conseillé, laisse coché ;
   - **envoyer l'horloge même à l'arrêt** : décoche si une vieille machine se met à jouer toute seule dès qu'elle reçoit l'horloge ;
   - **le bouton met en pause** : voir section 1 ;
-  - le **métronome MIDI** : une note sur le 1er temps seulement, ou sur chaque temps (le 1er plus fort), avec canal et notes au choix.
+  - le **métronome MIDI** : une note sur le 1er temps seulement, ou sur chaque temps (le 1er plus fort), avec son canal et ses notes. Ce canal ne concerne que le métronome.
 - **Préréglages** : 4 emplacements. « Enregistrer ici » garde **tout** (modes des jacks, probabilités, rythmes, MIDI, mesure) **et le tempo du moment**. En chargeant un préréglage, son tempo revient aussi ; le potard reprend la main dès que tu le bouges.
 - **Sauvegarde** : « Exporter les réglages » télécharge un fichier `.json` avec toute ta configuration, le tempo et la place des jacks. « Importer des réglages… » le remet dans la boîte. Pratique pour garder ta configuration de concert à l'abri, la partager avec un ami qui a une clockbox, ou la remettre après une mise à jour. « Charger » le rappelle, « Effacer » le vide. Un préréglage se rappelle aussi depuis le menu de la boîte (4e page), sans ordinateur.
 - **Mise à jour du firmware** : voir section 6.
@@ -228,6 +239,8 @@ Tes réglages et tes préréglages sont normalement conservés d'une version à 
 | Ma boîte à rythme ne repart pas du début | Laisse cochée « Envoyer la position de départ » |
 | Je ne sais plus ce que j'ai réglé | Connecte l'écran, ou entre dans le menu : la LED montre le mode de chaque jack |
 | « Connecter la boîte » ne montre pas « FT232R » | Vérifie le câble USB. Ferme tout autre programme qui utiliserait la boîte (IDE Arduino, autre onglet de l'écran) |
+| Le séquenceur ne fait aucun son | Dans la carte Séquenceur, coche « Jouer en MIDI » sur la piste et choisis le canal de ton synthé (pas celui du métronome). Vérifie le câble MIDI |
+| Une gamme microtonale sonne faux | Règle la plage de pitch bend du synthé sur ±2 demi-tons |
 | L'écran dit que ma boîte a un ancien firmware | Mets-la à jour depuis la carte « Mise à jour du firmware » (section 6) |
 
 ---
