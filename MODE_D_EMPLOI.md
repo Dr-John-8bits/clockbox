@@ -228,6 +228,7 @@ La boîte n'a pas d'écran, mais l'ordinateur peut en faire un : une page qui af
   - **le bouton met en pause** : voir section 1 ;
   - le **métronome MIDI** : une note sur le 1er temps seulement, ou sur chaque temps (le 1er plus fort), avec son canal et ses notes. Ce canal ne concerne que le métronome.
 - **Préréglages** : 4 emplacements. « Enregistrer ici » garde **tout** (modes des jacks, probabilités, rythmes, MIDI, mesure) **et le tempo du moment**. En chargeant un préréglage, son tempo revient aussi ; le potard reprend la main dès que tu le bouges.
+- **↺ Horloge simple** (sous les préréglages) : remet la boîte dans l'esprit de son premier firmware. Les 3 jacks passent en croches (1/8), et le MIDI n'envoie plus que l'horloge, Start et Stop : les pistes passent en « MIDI coupé », le génératif et le métronome s'arrêtent. Rien n'est effacé : ta séquence reste en mémoire, il suffit de réactiver le MIDI d'une piste (ou de charger un préréglage) pour tout retrouver. Le tempo bloqué n'est pas touché.
 - **Sauvegarde** : « Exporter les réglages » télécharge un fichier `.json` avec toute ta configuration, le tempo et la place des jacks. « Importer des réglages… » le remet dans la boîte. Pratique pour garder ta configuration de concert à l'abri, la partager avec un ami qui a une clockbox, ou la remettre après une mise à jour. « Charger » le rappelle, « Effacer » le vide. Un préréglage se rappelle aussi depuis le menu de la boîte (4e page), sans ordinateur.
 - **Mise à jour du firmware** : voir section 6.
 

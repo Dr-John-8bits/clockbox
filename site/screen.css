@@ -336,3 +336,4 @@
   .lockrow { margin: 4px 0 6px; font-weight: 600; }
   @keyframes seqflash { from { box-shadow: 0 0 0 3px var(--ok); } to { box-shadow: 0 0 0 0 transparent; } }
   #seq .flash { animation: seqflash .6s ease-out; }
+  .simple { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }

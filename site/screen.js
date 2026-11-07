@@ -42,6 +42,9 @@ const T = {
     metro: "Métronome MIDI", metroModes: ["Éteint", "1er temps seulement", "Chaque temps"],
     metroDown: "Note du 1er temps", metroBeat: "Note des autres temps",
     presetsTitle: "Préréglages",
+    simpleBtn: "↺ Horloge simple (comme à l'origine)",
+    simpleConfirm: "Revenir à une horloge simple ? Les 3 jacks passent en croches, et le MIDI n'envoie plus que l'horloge (pistes en « MIDI coupé », génératif et métronome arrêtés). Ta séquence n'est pas effacée.",
+    simpleDone: "Horloge simple : 3 jacks en croches, MIDI = horloge seule",
     presetsHelp: "4 emplacements dans la boîte pour tout garder : modes des jacks, rythmes, MIDI, mesure et tempo. Le 4e écran du menu de la boîte permet de les rappeler sans ordinateur.",
     pLoad: "Charger", pSave: "Enregistrer ici", pErase: "Effacer", pFilled: "enregistré", pEmpty: "vide",
     pConfirmSave: "Remplacer le préréglage {n} par les réglages actuels ?",
@@ -107,6 +110,9 @@ const T = {
     metro: "MIDI metronome", metroModes: ["Off", "Beat 1 only", "Every beat"],
     metroDown: "Beat 1 note", metroBeat: "Other beats note",
     presetsTitle: "Presets",
+    simpleBtn: "↺ Simple clock (like the original)",
+    simpleConfirm: "Go back to a simple clock? The 3 jacks send 8ths, and MIDI only carries the clock (tracks muted, generative and metronome off). Your sequence is not erased.",
+    simpleDone: "Simple clock: 3 jacks on 8ths, MIDI = clock only",
     presetsHelp: "4 slots in the box to keep everything: jack modes, rhythms, MIDI, time signature and tempo. The 4th page of the box menu recalls them without a computer.",
     pLoad: "Load", pSave: "Save here", pErase: "Erase", pFilled: "saved", pEmpty: "empty",
     pConfirmSave: "Replace preset {n} with the current settings?",
@@ -973,6 +979,25 @@ $("fwUpdate").addEventListener("click", () => {
 });
 $("fwFileBtn").addEventListener("click", () => $("fwFile").click());
 $("expBtn").addEventListener("click", exportSettings);
+// Back to the spirit of the 2020 firmware: same clock everywhere, no notes. Nothing is erased.
+$("simpleClock").addEventListener("click", () => {
+  if (!C || !S || S.fwNum < 25 || !confirm(t("simpleConfirm"))) return;
+  const c = Object.assign({}, C, { jackMode: [2, 2, 2], jackProb: [100, 100, 100], jackTrigger: [0, 0, 0],
+    jackOffset: [0, 0, 0], metroMode: 0 });
+  C = c;
+  send(enc(0x14, ...encodeConfig(c)));
+  if (SEQ.tracks) {
+    pushUndo();
+    for (let tr = 0; tr < 4; tr++) {
+      if (SEQ.tracks[tr].midi) { SEQ.tracks[tr].midi = 0; seqSendTrack(tr); }
+      if (SEQ.gen[tr].amount) { SEQ.gen[tr].amount = 0; seqSendGen(tr); }
+    }
+    SEQ.mute = 0; SEQ.solo = 0; seqSendMute();
+  }
+  for (let j = 0; j < 3; j++) send(enc(0x11, j, 2));
+  log(t("simpleDone"));
+  renderPanel(); renderSettings();
+});
 $("impBtn").addEventListener("click", () => $("impFile").click());
 $("impFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) importSettings(f); });
 $("fwFile").addEventListener("change", async e => {

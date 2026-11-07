@@ -2,6 +2,7 @@
 // clockbox screen: contextual help bubbles ("?" buttons). Uses the globals of screen.js.
 const HELP = {
   fr: {
+    simple: "Remet la boîte dans l'esprit de son premier firmware : les 3 jacks en croches (1/8), et le MIDI n'envoie plus que l'horloge, Start et Stop. Les pistes passent en « MIDI coupé », le génératif et le métronome s'arrêtent. Rien n'est effacé : ta séquence reste en mémoire, et un préréglage peut tout remettre. Le tempo bloqué n'est pas touché.",
     tLock: "Le potard ne change plus le tempo. Le tempo bloqué est gardé dans la boîte : elle redémarre à ce tempo, même débranchée. Charger un préréglage remet son tempo, qui reste bloqué. Idéal pour un concert : prépare ton patch, bloque, et rien ne bouge si on touche le potard. Le tempo peut toujours être changé depuis cette page.",
     transport: "Start lance tout (boîte, MIDI, jacks). Pause garde la position ; Reprendre repart de là. Début ramène au début. Le tempo se tape au dixième près, ou au rythme avec « Tap » ; le potard reprend la main dès que tu le bouges.",
     jacks: "Les 3 prises jack envoient des impulsions de 0 ou 5 V pour le modulaire. Chaque jack a son mode : une horloge, un reset, un run, ou les notes d'une piste du séquenceur. Tout est enregistré dans la boîte dès que tu cliques.",
@@ -40,6 +41,7 @@ const HELP = {
     mMetro: "Une note MIDI sur le 1er temps, ou sur chaque temps (le 1er plus fort). Ce canal ne concerne que le métronome, pas les pistes du séquenceur.",
   },
   en: {
+    simple: "Puts the box back in the spirit of its first firmware: the 3 jacks on 8ths (1/8), and MIDI only carries the clock, Start and Stop. Tracks are muted, generative and metronome stop. Nothing is erased: your sequence stays in memory, and a preset can bring everything back. The tempo lock is left as it is.",
     tLock: "The pot no longer changes the tempo. The locked tempo is kept in the box: it starts at that tempo, even after being unplugged. Loading a preset brings its tempo, which stays locked. Ideal for a gig: prepare your patch, lock, and nothing moves if someone touches the pot. The tempo can still be changed from this page.",
     transport: "Start runs everything (box, MIDI, jacks). Pause keeps the position; Continue resumes from there. To start goes back to the beginning. Type the tempo to 0.1, or tap it with “Tap”; the pot takes over as soon as you move it.",
     jacks: "The 3 jacks send 0 or 5 V pulses for the modular. Each jack has a mode: a clock, reset, run, or the notes of a sequencer track. Everything is saved in the box as soon as you click.",
