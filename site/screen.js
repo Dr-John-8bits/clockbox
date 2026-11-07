@@ -52,7 +52,7 @@ const T = {
     fwNoHex: "Le fichier du firmware n'est pas disponible ici (page ouverte depuis le disque ?) : choisis un fichier .hex.",
     fwSteps: ["Connexion au bootloader…", "Écriture…", "Vérification…", "Terminé !"],
     fwDone: "Firmware installé. La boîte redémarre.", fwFail: "Échec de la mise à jour : {e}. La boîte n'est pas abîmée : réessaie.",
-    fwSettings: "Tes réglages et préréglages sont conservés d'une version à l'autre quand c'est possible (la 2.4 reprend ceux de la 2.2 et de la 2.3). Par précaution, exporte-les avant (carte Sauvegarde).",
+    fwSettings: "Tes réglages, préréglages et ta séquence sont conservés d'une version à l'autre quand c'est possible (la 2.6 reprend ceux de la 2.4 et de la 2.5). Par précaution, exporte-les avant (carte Sauvegarde).",
     infoTitle: "État", howTitle: "Rappel des commandes", logTitle: "Journal",
     howList: [
       "<b>Potard</b> : tempo, 30 à 240 BPM.",
@@ -116,7 +116,7 @@ const T = {
     fwNoHex: "The firmware file is not available here (page opened from disk?): pick a .hex file.",
     fwSteps: ["Talking to the bootloader…", "Writing…", "Verifying…", "Done!"],
     fwDone: "Firmware installed. The box restarts.", fwFail: "Update failed: {e}. The box is not harmed: try again.",
-    fwSettings: "Your settings and presets are kept from one version to the next whenever possible (2.4 keeps those of 2.2 and 2.3). To be safe, export them first (Backup card).",
+    fwSettings: "Your settings, presets and sequence are kept from one version to the next whenever possible (2.6 keeps those of 2.4 and 2.5). To be safe, export them first (Backup card).",
     infoTitle: "Status", howTitle: "Controls", logTitle: "Log",
     howList: [
       "<b>Pot</b>: tempo, 30 to 240 BPM.",

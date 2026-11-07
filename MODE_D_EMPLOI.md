@@ -238,7 +238,7 @@ Le firmware, c'est le programme qui tourne dans la boîte. Quand une nouvelle ve
 
 Si quelque chose se passe mal (câble débranché, par exemple), **la boîte n'est pas abîmée** : la partie qui permet de la mettre à jour ne s'efface jamais. Recommence simplement.
 
-Tes réglages et tes préréglages sont normalement conservés d'une version à l'autre (la 2.4 reprend ceux de la 2.3 et de la 2.2). Si un jour une version ne peut pas les reprendre, la boîte repart sur ses réglages d'origine : il suffit alors de les refaire sur l'écran.
+Tes réglages, tes préréglages et ta séquence sont conservés d'une version à l'autre quand c'est possible. La 2.5 et la 2.6 reprennent les réglages de la 2.4 : les rythmes euclidiens A, B et C deviennent alors les pistes 1 à 3 du séquenceur. Depuis une version plus ancienne, la boîte repart sur ses réglages d'origine. Par précaution, fais un export (carte Sauvegarde) avant une mise à jour.
 
 ---
 
@@ -255,6 +255,7 @@ Tes réglages et tes préréglages sont normalement conservés d'une version à 
 | Je ne sais plus ce que j'ai réglé | Connecte l'écran, ou entre dans le menu : la LED montre le mode de chaque jack |
 | « Connecter la boîte » ne montre pas « FT232R » | Vérifie le câble USB. Ferme tout autre programme qui utiliserait la boîte (IDE Arduino, autre onglet de l'écran) |
 | Le séquenceur ne fait aucun son | Dans la carte Séquenceur, coche « Jouer en MIDI » sur la piste et choisis le canal de ton synthé (pas celui du métronome). Vérifie le câble MIDI |
+| La barre CC ne change rien au son | Le synthé doit accepter ce numéro de CC (regarde sa documentation MIDI). Vérifie aussi que « Envoyer ce CC » est coché et que la piste joue en MIDI |
 | Une gamme microtonale sonne faux | Règle la plage de pitch bend du synthé sur ±2 demi-tons |
 | L'écran dit que ma boîte a un ancien firmware | Mets-la à jour depuis la carte « Mise à jour du firmware » (section 6) |
 

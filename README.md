@@ -7,7 +7,7 @@ Let's watch a nice little video about what it does : https://youtu.be/OYtPbgozCb
 
 Original project by Alexis Zbik (2020). Version 2 (2026) adds, with no hardware change:
 - one mode per jack: clocks, triplets, dotted 8th, **free divisions** (1 every N sixteenths), reset, run, and the **sequencer tracks**, with a **probability**, a **trigger or gate** pulse and an **offset** per jack;
-- a **4-track MIDI sequencer** (32 steps, step or Euclidean, the 91 scales of our FM-1 synths Rhizome and Monades including microtonal ones, randomness, probability, substeps, a MIDI channel per step or ALL, accent, humanize) and a **MIDI metronome**;
+- a **4-track MIDI sequencer** (32 steps, step or Euclidean, the 91 scales of our FM-1 synths Rhizome and Monades including microtonal ones, randomness, probability, substeps, a MIDI channel per step or ALL, a CC value per step, accent, humanize, live mute/solo) and a **MIDI metronome**;
 - **time signatures**, **Song Position**, **pause/continue**, optional MIDI clock while stopped;
 - **4 presets** (with their tempo), settings **export/import** as a file, a beat LED, a steadier tempo, a settings menu on the box;
 - a **screen in the browser** over USB (Chrome/Edge), with every setting, tap tempo and **one-click firmware updates**.
@@ -66,7 +66,7 @@ Defaults: jack 1 (top) = 1/16, jack 2 (middle) = Reset, jack 3 (bottom) = 1/8.
 
 ### Sequencer
 
-4 tracks of up to 32 steps, each in step mode or Euclidean mode (hits and rotation over the length), with its own step length (1/16, 1/8, 1/16 triplet, 1/4, 1/32), direction (forward, backward, ping-pong, random), MIDI channel (1-16 or ALL), scale and root, transpose, track probability, random notes within a range, humanize and accent. Each step has a note, a velocity, its own MIDI channel (or the track's), a probability, 1 to 4 substeps (ratchets), a note length and a random-note flag.
+4 tracks of up to 32 steps, each in step mode or Euclidean mode (hits and rotation over the length), with its own step length (1/16, 1/8, 1/16 triplet, 1/4, 1/32), direction (forward, backward, ping-pong, random), MIDI channel (1-16 or ALL), scale and root, transpose, track probability, random notes within a range, humanize and accent. Each step has a note, a velocity, its own MIDI channel (or the track's), a probability, 1 to 4 substeps (ratchets), a note length, a random-note flag and a CC value (each track sends one CC number of its choice, on its channel, when the value changes). Tracks can be muted or soloed live from the screen (not saved).
 
 The 91 scales come from our FM-1 synths Rhizome and Monades (`tools/import_scales.py` converts their `scale_table.inc` into `scales.h` and `site/scales.js`). Notes are always quantized to the scale; ragas use their ascending or descending form; microtonal scales send a pitch bend (±2 semitones) before each note. The sequence lives in EEPROM (one sequence; export/import as JSON from the page), and plays without a computer.
 
@@ -79,7 +79,7 @@ The 91 scales come from our FM-1 synths Rhizome and Monades (`tools/import_scale
 
 ### Screen in the browser
 
-Open **https://dr-john-8bits.github.io/clockbox/** in Chrome or Edge (Web Serial; `site/index.html` also works offline), click **Connect the box** and pick the USB serial port. The page draws the box with a screen and shows everything live. Every setting is there (jack modes, Euclidean rhythms with a live ring, MIDI options, metronome, time signature, presets), with transport buttons, an exact tempo, tap tempo, **Identify** to find which jack is which, and a **firmware update** button (STK500 over Web Serial, verified after writing).
+Open **https://dr-john-8bits.github.io/clockbox/** in Chrome or Edge (Web Serial; `site/index.html` also works offline), click **Connect the box** and pick the USB serial port. The page draws the box with a screen and shows everything live. Every setting is there: the sequencer (an overview row per track with its MIDI pill and mute/solo, click a step to turn it on, drawable lanes for note, velocity, probability, substeps, length, channel, random and CC, invent notes or a rhythm, copy a track, undo), jack modes, MIDI options, metronome, time signature, presets, export/import, transport buttons, an exact tempo, tap tempo, **Identify** to find which jack is which, and a **firmware update** button (STK500 over Web Serial, verified after writing). Small “?” buttons explain the settings.
 
 - The box restarts once when the page connects (USB-serial DTR reset): connect before playing.
 - The box sends nothing extra until the page says hello. While connected, status messages are SysEx (manufacturer ID `0x7D`), also present on the MIDI outputs. The protocol is described at the top of `clockbox.ino`.
@@ -98,7 +98,7 @@ Boîtier d'horloge pour instruments électroniques : sortie MIDI, 3 jacks clock/
 - **Potard** : tempo de 30 à 240 BPM.
 - **Bouton** : en marche, un appui arrête (ou met en pause, en option). À l'arrêt, un appui court lance (au relâchement) ; tenir 1,5 s ouvre le menu.
 - **Jacks** : horloges, triolets, croche pointée, division libre, reset, run ou pistes du séquenceur, avec par jack une probabilité, une impulsion trigger ou gate et un décalage. Jack 1 = haut, jack 2 = milieu, jack 3 = bas. Par défaut : haut = 1/16, milieu = reset, bas = 1/8.
-- **Séquenceur MIDI 4 pistes** : pas à pas ou euclidien, 91 gammes (celles de nos synthés Rhizome et Monades), aléatoire, probabilité, sous-pas, un canal par pas.
+- **Séquenceur MIDI 4 pistes** : pas à pas ou euclidien, 91 gammes (celles de nos synthés Rhizome et Monades), aléatoire, probabilité, sous-pas, un canal par pas, un CC par pas, mute et solo en live, invention de notes ou de rythmes, annulation.
 - **MIDI** : horloge, position de départ, pause et reprise, métronome en notes MIDI, mesures 4/4, 3/4, 2/4, 5/4, 6/8, 7/8.
 - **4 préréglages** (avec leur tempo), rappelables depuis l'écran ou depuis le menu de la boîte, et **export/import** des réglages en fichier.
 - **Écran dans le navigateur** : ouvre **https://dr-john-8bits.github.io/clockbox/** dans Chrome, clique « Connecter la boîte ». Tout s'affiche en direct, tout se règle à la souris, et le firmware se met à jour en un clic.

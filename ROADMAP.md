@@ -1,6 +1,6 @@
 # Feuille de route
 
-## Fait (v2.4)
+## Fait jusqu'à la v2.4
 Modes par jack (horloges, triolets, pointée, division libre, reset, run, euclidiens), probabilité, trigger/gate, décalage, rythmes euclidiens en MIDI, métronome, mesures, Song Position, pause/reprise, 4 préréglages avec tempo, export/import, écran dans le navigateur, mise à jour depuis le site.
 
 ## Fait le 7 novembre 2026 (v2.5)

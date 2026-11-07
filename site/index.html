@@ -6,8 +6,8 @@
 <title>clockbox — horloge MIDI et modulaire</title>
 <meta name="description" content="La clockbox : une horloge Arduino open source pour synchroniser machines MIDI et synthés modulaires. Avec son écran dans le navigateur.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b1b1b'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23ff3b30'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="screen.css?v=2.6.2">
-<link rel="stylesheet" href="site.css?v=2.6.2">
+<link rel="stylesheet" href="screen.css?v=2.6.3">
+<link rel="stylesheet" href="site.css?v=2.6.3">
 </head>
 <body>
 
@@ -189,7 +189,7 @@ window.SITE_T = {
       <div class="feat"><h3>3 sorties clock/gate</h3><p>Chaque jack a son mode : 24 ppqn, doubles croches, croches, noires, blanches, mesure, triolets, croche pointée, Reset, Run ou piste du séquenceur.</p></div>
       <div class="feat"><h3>Trigger, décalage, polyrythmes</h3><p>Par jack : impulsion courte (trigger) ou gate, décalage jusqu'à 15 doubles croches (contretemps), et division libre « 1 toutes les N doubles croches » pour des polyrythmes.</p></div>
       <div class="feat"><h3>Probabilité</h3><p>Sur chaque jack et chaque rythme, une chance de 0 à 100 % que l'impulsion parte : le rythme respire et change un peu à chaque mesure.</p></div>
-      <div class="feat"><h3>Séquenceur 4 pistes</h3><p>32 pas en pas à pas ou euclidien, 91 gammes (dont microtonales), notes aléatoires, probabilité, sous-pas, un canal MIDI par pas : la boîte joue tes synthés toute seule.</p></div>
+      <div class="feat"><h3>Séquenceur 4 pistes</h3><p>32 pas en pas à pas ou euclidien, 91 gammes (dont microtonales), notes aléatoires, probabilité, sous-pas, un canal MIDI et un CC par pas, mute et solo en live : la boîte joue tes synthés toute seule.</p></div>
       <div class="feat"><h3>Métronome et mesures</h3><p>Une note MIDI sur le 1er temps ou sur chaque temps, en 4/4, 3/4, 2/4, 5/4, 6/8 ou 7/8.</p></div>
       <div class="feat"><h3>Reset au départ</h3><p>Une impulsion juste avant le premier coup d'horloge : ton séquenceur modulaire repart au pas 1 en même temps que tes machines MIDI.</p></div>
       <div class="feat"><h3>Tempo stable et précis</h3><p>De 30 à 240 BPM au potard, filtré. Depuis l'écran : un tempo au dixième près, ou le tap tempo.</p></div>
@@ -246,7 +246,7 @@ window.SITE_T = {
       <div class="feat"><h3>3 clock/gate outputs</h3><p>Each jack has its own mode: 24 ppqn, 16ths, 8ths, quarters, halves, bar, triplets, dotted 8th, Reset, Run or a sequencer track.</p></div>
       <div class="feat"><h3>Trigger, offset, polyrhythms</h3><p>Per jack: a short trigger or a gate, an offset of up to 15 sixteenths (off-beats), and a free division “1 every N sixteenths” for polyrhythms.</p></div>
       <div class="feat"><h3>Probability</h3><p>On each jack and each rhythm, a 0 to 100 % chance that a pulse goes out: the rhythm breathes and changes a little every bar.</p></div>
-      <div class="feat"><h3>4-track sequencer</h3><p>32 steps, step or Euclidean, 91 scales (microtonal ones included), random notes, probability, substeps, a MIDI channel per step: the box plays your synths on its own.</p></div>
+      <div class="feat"><h3>4-track sequencer</h3><p>32 steps, step or Euclidean, 91 scales (microtonal ones included), random notes, probability, substeps, a MIDI channel and a CC per step, live mute and solo: the box plays your synths on its own.</p></div>
       <div class="feat"><h3>Metronome and time signatures</h3><p>A MIDI note on beat 1 or on every beat, in 4/4, 3/4, 2/4, 5/4, 6/8 or 7/8.</p></div>
       <div class="feat"><h3>Reset on start</h3><p>A pulse just before the first clock: your modular sequencer goes back to step 1 together with your MIDI gear.</p></div>
       <div class="feat"><h3>Steady, exact tempo</h3><p>30 to 240 BPM from the pot, filtered. From the screen: a tempo to 0.1 BPM, or tap tempo.</p></div>
@@ -290,10 +290,10 @@ window.SITE_T = {
   }
 };
 </script>
-<script src="scales.js?v=2.6.2"></script>
-<script src="screen.js?v=2.6.2"></script>
-<script src="sequencer.js?v=2.6.2"></script>
-<script src="help.js?v=2.6.2"></script>
+<script src="scales.js?v=2.6.3"></script>
+<script src="screen.js?v=2.6.3"></script>
+<script src="sequencer.js?v=2.6.3"></script>
+<script src="help.js?v=2.6.3"></script>
 <div id="helpPop" class="helppop" hidden role="dialog"></div>
 </body>
 </html>
