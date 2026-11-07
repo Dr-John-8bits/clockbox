@@ -11,6 +11,9 @@ Modes par jack (horloges, triolets, pointée, division libre, reset, run, euclid
 - Mute et solo des pistes en live, Inventer des notes ou un rythme, copier une piste, euclidien → pas à pas, Annuler.
 - Une valeur CC par pas, sur le CC choisi.
 
+## Fait le 8 novembre 2026 (v2.7)
+- Note la plus basse par piste (MIDI 48 par défaut, le premier do du MS-20 en 32').
+
 ## À faire
 - **Gamakas des ragas** (kan, meend, andolan) en pitch bend, en reprenant les courbes de Monades. Ce n'est pas abandonné.
 - LFO et notes en CV : abandonnés, ils demanderaient de souder.

@@ -166,7 +166,8 @@ Par défaut, la piste 1 joue sur le canal 1, la piste 2 sur le canal 2, la piste
 - **Longueur** (1 à 32 pas), **durée d'un pas** (1/16, 1/8, 1/16 triolet, 1/4, 1/32) et **sens de lecture** (avant, arrière, aller-retour, hasard). Des pistes de longueurs différentes se décalent entre elles : c'est une source de polyrythmes.
 - **Gamme et tonique** : les 91 gammes de nos synthés FM-1 Rhizome et Monades (majeure, mineure, modes, pentatoniques, blues, bebop, ragas, maqams, japonaises, microtonales, et une gamme CUSTOM où tu choisis toi-même les notes). Les notes de la piste sont toujours ramenées dans la gamme : **impossible de jouer faux**. Les ragas ont une forme montante et une forme descendante, et la boîte choisit la bonne selon le sens de la mélodie.
 - **Gammes microtonales** (maqams en quarts de ton, 19 et 24 tons, intonation juste…) : la boîte envoie un **pitch bend** avant chaque note. Règle la plage de pitch bend de ton synthé sur ±2 demi-tons. Le pitch bend touche tout un canal : pour jouer plusieurs notes microtonales à la fois, répartis-les sur plusieurs canaux.
-- **Transposition** : ±24 demi-tons.
+- **Note la plus basse** : aucune note de la piste ne descend en dessous. Une note plus grave (écrite, aléatoire ou transposée) remonte d'une octave, en restant dans la gamme. Par défaut, c'est **MIDI 48**, le premier do du MS-20 avec le VCO1 en 32'. Les notes proposées et les barres partent de là. Le menu affiche le nom de la note et son numéro MIDI, car les noms d'octave changent d'une marque à l'autre (ici, MIDI 60 = C3).
+- **Transposition** : ±24 demi-tons. **+12 = une octave plus haut, −12 = une octave plus bas**, pour toute la piste d'un coup (dans « Plus de réglages de la piste »).
 - **Variations** :
   - **probabilité de la piste** : la chance que chaque pas joue ;
   - **notes aléatoires** : la chance qu'un pas joue une autre note de la gamme, dans l'**étendue** choisie ;

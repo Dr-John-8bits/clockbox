@@ -551,7 +551,7 @@ function demoCommand(bytes) {
   }
   if (c === 0x13) D.pos = [d[0], d[1], d[2]];
   if (c === 0x14) { const n = decodeConfig([...d, 0]); demo.C = n; D.modes = n.jackMode.slice(); }
-  if (c >= 0x18 && c <= 0x1E) return;   // sequence edits: the page already holds them
+  if (c >= 0x18 && c <= 0x1F) return;   // sequence edits: the page already holds them
   if (c === 0x15) { D.bpm = ((d[0] << 7) | d[1]) / 10; D.tempoArmed = false; }
   if (c === 0x16) return demoTransport(d[0]);
   if (c === 0x17) {
@@ -855,6 +855,7 @@ function checkSequence(q) {
     transpose: 48, direction: 3, prob: 100, randNote: 100, randRange: 24, humanize: 40, accent: 60 };
   const tracks = q.tracks.map(k => {
     const o = Object.fromEntries(TRACK_KEYS.map(key => [key, int(k[key], key === "length" ? 1 : 0, limits[key])]));
+    o.low = k.low == null ? 48 : int(k.low, 0, 127);
     o.hits = Math.min(o.hits, o.length); o.rotation = Math.min(o.rotation, o.length - 1);
     return o;
   });

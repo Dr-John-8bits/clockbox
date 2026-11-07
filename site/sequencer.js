@@ -29,6 +29,7 @@ const SEQ_T = {
     invNotes: "Inventer des notes", invRhythm: "Inventer un rythme", toSteps: "Euclidien → pas à pas",
     copyTo: "Copier cette piste vers", copyGo: "Copier", copied: "Piste {a} copiée vers la piste {b}",
     ccNum: "CC n°", ccOn: "Envoyer ce CC", ccOff: "Coche « Envoyer ce CC » pour que la boîte l'envoie.",
+    tLow: "Note la plus basse",
     sFill: "Tout allumer", sClear: "Tout éteindre", sCopyHalf: "Copier la 1re moitié sur la 2e",
     custom: "Gamme CUSTOM : clique les notes à garder",
     micro: "Gamme microtonale : la boîte envoie un pitch bend (règle ton synthé sur ±2 demi-tons).",
@@ -62,6 +63,7 @@ const SEQ_T = {
     invNotes: "Invent notes", invRhythm: "Invent a rhythm", toSteps: "Euclidean → steps",
     copyTo: "Copy this track to", copyGo: "Copy", copied: "Track {a} copied to track {b}",
     ccNum: "CC #", ccOn: "Send this CC", ccOff: "Tick “Send this CC” so that the box sends it.",
+    tLow: "Lowest note",
     sFill: "All on", sClear: "All off", sCopyHalf: "Copy the 1st half onto the 2nd",
     custom: "CUSTOM scale: click the notes to keep",
     micro: "Microtonal scale: the box sends a pitch bend (set your synth to ±2 semitones).",
@@ -90,6 +92,7 @@ const SEQ = {
   loaded: false,
   cc: null,              // [{num, on, vals[32]}] x4
   mute: 0, solo: 0,      // live masks
+  low: [48, 48, 48, 48],  // lowest note of each track (firmware 2.7+)
   undo: [],
 };
 
@@ -100,7 +103,7 @@ function defaultSequence() {
     [2, 16, 7, 0, 0, 2, 1, 0, 0, 24, 0, 80, 0, 12, 10, 20],
     [1, 16, 4, 0, 0, 3, 1, 1, 0, 24, 0, 100, 0, 12, 0, 0]];
   const line = [36, 0, 0, 39, 0, 0, 43, 0, 46, 0, 0, 43, 0, 39, 0, 0];
-  SEQ.tracks = tr.map(a => Object.fromEntries(TRACK_KEYS.map((k, i) => [k, a[i]])));
+  SEQ.tracks = tr.map((a, t) => Object.assign(Object.fromEntries(TRACK_KEYS.map((k, i) => [k, a[i]])), { low: SEQ.low[t] }));
   SEQ.steps = [36, 38, 42, 48].map((n, t) => Array.from({ length: 32 }, (_, s) => {
     if (t < 3) return [n, [110, 100, 80][t], 0, 4];
     const v = line[s % 16];
@@ -131,15 +134,20 @@ function playedNote(k, raw, down = false) {
     let mask = k.scale === SCALES.custom ? (SEQ.custom || 0xFFF) : (down ? sc.down : sc.up);
     let deg = (((n - k.root) % 12) + 12) % 12;
     for (let i = 0; i < 12 && !(mask & (1 << deg)); i++) { n--; deg = (deg + 11) % 12; }
-    return { note: Math.max(0, n), cents: 0 };
+    n = Math.max(0, n);
+    while (n < (k.low || 0) && n + 12 <= 127) n += 12;   // same as the firmware: no note below the track's lowest
+    return { note: n, cents: 0 };
   }
   const period = Math.round(sc.period * 10), base = (60 + k.root) * 1000, t = n * 1000 - base;
   const oct = Math.floor(t / period), rem = t - oct * period;
   let best = 0, dist = rem;
   if (period - rem < dist) { best = period; dist = period - rem; }
   for (const c of sc.cents) { const d = Math.round(c * 10), x = Math.abs(d - rem); if (x < dist) { best = d; dist = x; } }
-  const pitch = base + oct * period + best, out = Math.max(0, Math.min(127, Math.floor((pitch + 500) / 1000)));
-  return { note: out, cents: Math.round((pitch - out * 1000) / 10) };
+  const pitch = base + oct * period + best;
+  let out = Math.max(0, Math.min(127, Math.floor((pitch + 500) / 1000)));
+  const cents = Math.round((pitch - out * 1000) / 10);
+  while (out < (k.low || 0) && out + 12 <= 127) out += 12;
+  return { note: out, cents };
 }
 const playedLabel = p => noteLabel12(p.note) + (p.cents ? (p.cents > 0 ? " +" : " ") + p.cents + "¢" : "");
 
@@ -148,7 +156,7 @@ function scaleChoices(k) {
   const seen = new Map();
   for (let raw = 0; raw < 128; raw++) {
     const p = playedNote(k, raw);
-    if (p.note < 24 || p.note > 108) continue;
+    if (p.note < Math.max(12, k.low || 0) || p.note > 108) continue;
     const key = p.note * 1000 + p.cents;
     if (!seen.has(key)) seen.set(key, { raw, p });
   }
@@ -160,7 +168,7 @@ function seqOnTrack(d) {
   if (!SEQ.tracks) defaultSequence();
   const t = d[0];
   if (t > 3 || d.length < 17 || SEQ.timers["t" + t]) return;
-  SEQ.tracks[t] = Object.fromEntries(TRACK_KEYS.map((k, i) => [k, d[1 + i]]));
+  SEQ.tracks[t] = Object.assign(Object.fromEntries(TRACK_KEYS.map((k, i) => [k, d[1 + i]])), { low: SEQ.low[t] });
   seqRender();
 }
 function seqOnStep(d) {
@@ -177,6 +185,7 @@ function seqOnCC(d) {
   const t = d[0];
   if (t > 3 || d.length < 35 || SEQ.timers["c" + t]) return;
   SEQ.cc[t] = { num: d[1], on: d[2], vals: d.slice(3, 35) };
+  if (d.length >= 36 && !SEQ.timers["l" + t]) { SEQ.low[t] = d[35]; if (SEQ.tracks) SEQ.tracks[t].low = d[35]; SEQ.win[t] = null; }
   seqRenderSoon();
 }
 function seqOnPlayhead(d, now) {
@@ -214,6 +223,10 @@ function seqSendCCTrack(t) {
   SEQ.timers["c" + t] = setTimeout(() => { delete SEQ.timers["c" + t]; send(enc(0x1E, t, SEQ.cc[t].num, SEQ.cc[t].on)); }, 200);
 }
 function seqSendMute() { send(enc(0x1C, SEQ.mute, SEQ.solo)); }
+function seqSendLow(t) {
+  clearTimeout(SEQ.timers["l" + t]);
+  SEQ.timers["l" + t] = setTimeout(() => { delete SEQ.timers["l" + t]; send(enc(0x1F, t, SEQ.low[t])); }, 150);
+}
 
 // ------------------------------------------------------------------- undo --
 const seqState = () => JSON.stringify({ tracks: SEQ.tracks, steps: SEQ.steps, cc: SEQ.cc, custom: SEQ.custom });
@@ -227,7 +240,10 @@ function seqUndo() {
   if (!prev) { log(t("undoNone")); return; }
   const p = JSON.parse(prev);
   for (let tr = 0; tr < 4; tr++) {
-    if (JSON.stringify(p.tracks[tr]) !== JSON.stringify(SEQ.tracks[tr])) { SEQ.tracks[tr] = p.tracks[tr]; seqSendTrack(tr); }
+    if (JSON.stringify(p.tracks[tr]) !== JSON.stringify(SEQ.tracks[tr])) {
+      if (p.tracks[tr].low !== SEQ.tracks[tr].low) { SEQ.low[tr] = p.tracks[tr].low; seqSendLow(tr); }
+      SEQ.tracks[tr] = p.tracks[tr]; seqSendTrack(tr);
+    }
     for (let s = 0; s < 32; s++) if (p.steps[tr][s].join() !== SEQ.steps[tr][s].join()) { SEQ.steps[tr][s] = p.steps[tr][s]; seqSendStep(tr, s); }
     if (p.cc[tr].num !== SEQ.cc[tr].num || p.cc[tr].on !== SEQ.cc[tr].on) { SEQ.cc[tr].num = p.cc[tr].num; SEQ.cc[tr].on = p.cc[tr].on; seqSendCCTrack(tr); }
     for (let s = 0; s < 32; s++) if (p.cc[tr].vals[s] !== SEQ.cc[tr].vals[s]) { SEQ.cc[tr].vals[s] = p.cc[tr].vals[s]; seqSendCCStep(tr, s); }
@@ -241,6 +257,8 @@ async function seqSendAll() {   // after an import: everything, paced
   for (let t = 0; t < 4; t++) { await send(enc(0x19, t, ...TRACK_KEYS.map(k => SEQ.tracks[t][k]))); await sleep(15); }
   await send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); await sleep(15);
   for (let t = 0; t < 4; t++) {
+    SEQ.low[t] = SEQ.tracks[t].low != null ? SEQ.tracks[t].low : 48;
+    await send(enc(0x1F, t, SEQ.low[t])); await sleep(12);
     await send(enc(0x1E, t, SEQ.cc[t].num, SEQ.cc[t].on)); await sleep(12);
     for (let s = 0; s < 32; s++) { await send(enc(0x1D, t, s, SEQ.cc[t].vals[s])); await sleep(8); }
   }
@@ -275,10 +293,7 @@ const midiPill = k => !k.midi ? t("midiPillOff") : k.channel === 16 ? t("midiPil
 // The notes shown in the Note lane: two octaves of the scale, which the user can shift.
 function noteWindow(t) {
   const k = SEQ.tracks[t], all = scaleChoices(k);
-  if (SEQ.win[t] == null) {
-    const used = SEQ.steps[t].slice(0, k.length).map(b => playedNote(k, b[0] & 0x7F).note).sort((a, b) => a - b);
-    SEQ.win[t] = Math.max(24, (used[Math.floor(used.length / 2)] || 60) - 12);
-  }
+  if (SEQ.win[t] == null) SEQ.win[t] = Math.max(12, k.low || 24);   // the lane starts at the track's lowest note
   const lo = SEQ.win[t];
   return all.filter(c => c.p.note >= lo && c.p.note < lo + 25);
 }
@@ -319,6 +334,8 @@ function seqRender() {
       <label class="lab">${esc(t("tChannel"))}${helpBtn("sChannel")} ${selHtml('data-tk="channel"', chOpts, k.channel)}</label>
       <label class="lab">${esc(t("tScale"))}${helpBtn("sScale")} <select data-tk="scale">${scaleOptions(k.scale)}</select></label>
       <label class="lab">${esc(t("tRoot"))} ${selHtml('data-tk="root"', ROOTS, k.root)}</label>
+      <label class="lab">${esc(t("tLow"))}${helpBtn("sLow")} <select data-low="1">${Array.from({ length: 73 }, (_, i) => i + 12).map(n =>
+        `<option value="${n}" ${n === (k.low || 0) ? "selected" : ""}>${esc(noteLabel12(n))} · MIDI ${n}</option>`).join("")}</select></label>
       <span class="lab">${esc(t("tLength"))}${helpBtn("sLength")} ${stepper("length", k.length)}</span>
       ${k.mode === 2 ? `<span class="lab">${esc(t("tHits"))}${helpBtn("sHits")} ${stepper("hits", k.hits)}</span><span class="lab">${esc(t("tRot"))}${helpBtn("sRot")} ${stepper("rotation", k.rotation)}</span>` : ""}
     </div>
@@ -506,6 +523,7 @@ function seqBind() {
         SEQ.tracks[to] = Object.assign({}, k, keep);
         SEQ.steps[to] = SEQ.steps[t0].map(b => b.slice());
         SEQ.cc[to] = { num: SEQ.cc[t0].num, on: SEQ.cc[t0].on, vals: SEQ.cc[t0].vals.slice() };
+        SEQ.low[to] = SEQ.tracks[to].low; seqSendLow(to);
         seqSendTrack(to); seqSendCCTrack(to);
         for (let s = 0; s < 32; s++) { seqSendStep(to, s); seqSendCCStep(to, s); }
         log(tf("copied", { a: t0 + 1, b: to + 1 }));
@@ -549,6 +567,12 @@ function seqBind() {
     const el = e.target;
     if (el.dataset.tk && el.tagName === "SELECT") setTrack(el.dataset.tk, +el.value);
     if (el.dataset.tk && el.type === "range") { SEQ.sliding = false; seqRender(); }
+    if (el.dataset.low) {
+      pushUndo();
+      const t0 = SEQ.sel, v = +el.value;
+      SEQ.low[t0] = v; SEQ.tracks[t0].low = v; SEQ.win[t0] = null;
+      seqSendLow(t0); seqRender();
+    }
     if (el.dataset.ccnum) { pushUndo(); SEQ.cc[SEQ.sel].num = Math.max(0, Math.min(127, Math.round(+el.value) || 0)); seqSendCCTrack(SEQ.sel); seqRender(); }
     if (el.dataset.ccon) { pushUndo(); SEQ.cc[SEQ.sel].on = el.checked ? 1 : 0; seqSendCCTrack(SEQ.sel); seqRender(); }
   });
