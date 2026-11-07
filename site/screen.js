@@ -258,6 +258,7 @@ function makeParser() {
           if (sx[3] === 0x04 && sx.length >= 11) seqOnStep(sx.slice(4));
           if (sx[3] === 0x05 && sx.length >= 9) seqOnPlayhead(sx.slice(4), now);
           if (sx[3] === 0x06 && sx.length >= 6) seqOnCustom(sx.slice(4));
+          if (sx[3] === 0x07) seqOnCC(sx.slice(4));
         }
         return;
       }
@@ -550,7 +551,7 @@ function demoCommand(bytes) {
   }
   if (c === 0x13) D.pos = [d[0], d[1], d[2]];
   if (c === 0x14) { const n = decodeConfig([...d, 0]); demo.C = n; D.modes = n.jackMode.slice(); }
-  if (c >= 0x18 && c <= 0x1B) return;   // sequence edits: the page already holds them
+  if (c >= 0x18 && c <= 0x1E) return;   // sequence edits: the page already holds them
   if (c === 0x15) { D.bpm = ((d[0] << 7) | d[1]) / 10; D.tempoArmed = false; }
   if (c === 0x16) return demoTransport(d[0]);
   if (c === 0x17) {
@@ -837,7 +838,7 @@ function exportSettings() {
   if (!C || !S) return;
   const { presetMask, ...config } = C;
   const data = { app: "clockbox", format: 2, firmware: S.fw, tempo: S.bpm, positions: S.pos, config,
-    sequence: SEQ.tracks ? { tracks: SEQ.tracks, steps: SEQ.steps, custom: SEQ.custom } : undefined };
+    sequence: SEQ.tracks ? { tracks: SEQ.tracks, steps: SEQ.steps, custom: SEQ.custom, cc: SEQ.cc } : undefined };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -861,7 +862,9 @@ function checkSequence(q) {
     if (!Array.isArray(tr) || tr.length !== 32) throw new Error("pas invalides");
     return tr.map(b => { if (!Array.isArray(b) || b.length !== 4) throw new Error("pas invalide"); return b.map(x => int(x, 0, 255)); });
   });
-  return { tracks, steps, custom: q.custom == null ? 0xFFF : int(q.custom, 1, 0xFFF) };
+  const cc = Array.isArray(q.cc) && q.cc.length === 4 ? q.cc.map(c => ({ num: int(c.num, 0, 127), on: int(c.on, 0, 1),
+    vals: (Array.isArray(c.vals) && c.vals.length === 32 ? c.vals : Array(32).fill(64)).map(v => int(v, 0, 127)) })) : null;
+  return { tracks, steps, custom: q.custom == null ? 0xFFF : int(q.custom, 1, 0xFFF), cc };
 }
 
 function checkConfig(src) {
@@ -888,7 +891,7 @@ async function importSettings(file) {
     const q = data.sequence ? checkSequence(data.sequence) : null;
     if (S && S.fwNum < 25) throw new Error(t("seqOld"));
     await send(enc(0x14, ...encodeConfig(c)));
-    if (q) { SEQ.tracks = q.tracks; SEQ.steps = q.steps; SEQ.custom = q.custom; seqRender(); await seqSendAll(); }
+    if (q) { pushUndo(); SEQ.tracks = q.tracks; SEQ.steps = q.steps; SEQ.custom = q.custom; if (q.cc) SEQ.cc = q.cc; seqRender(); await seqSendAll(); }
     const pos = data.positions;
     if (Array.isArray(pos) && pos.length === 3 && [...pos].sort().join() === "0,1,2") await send(enc(0x13, ...pos));
     if (typeof data.tempo === "number" && data.tempo >= 20 && data.tempo <= 300) sendTempo(data.tempo);

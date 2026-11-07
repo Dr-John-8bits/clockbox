@@ -153,6 +153,11 @@ Par défaut, la piste 1 joue sur le canal 1, la piste 2 sur le canal 2, la piste
 - **Clique un pas** pour l'allumer ou l'éteindre, en mode pas à pas.
 - Sous les pas, choisis ce que tu veux régler : **Note**, **Vélocité**, **Probabilité**, **Sous-pas**, **Longueur**, **Canal** ou **Aléatoire**. Puis **glisse à la souris sur les barres** pour dessiner les valeurs, pas par pas ou en balayant plusieurs pas d'un coup.
 - Pour les notes, la hauteur de la barre choisit une note **de la gamme** ; les boutons « ▼ octave » et « ▲ octave » déplacent la plage affichée.
+- **M** coupe une piste et **S** l'isole (solo), tout de suite, pendant que ça joue. C'est fait pour le live, et ce n'est pas enregistré : au prochain allumage, toutes les pistes jouent.
+- **🎲 Inventer des notes** remplit la piste avec une mélodie au hasard dans la gamme, en gardant le rythme. **🎲 Inventer un rythme** tire un nouveau rythme (ou de nouveaux coups et une nouvelle rotation en euclidien).
+- **Euclidien → pas à pas** transforme un rythme euclidien en pas que tu peux ensuite modifier un par un.
+- **Copier cette piste vers…** recopie la piste (pas, notes, CC, réglages) sur une autre, en gardant le canal et le MIDI de la piste d'arrivée.
+- **↶ Annuler** (ou Cmd+Z) défait la dernière modification du séquenceur, et ainsi de suite jusqu'à 40 fois.
 - « Tout allumer », « Tout éteindre » et « Copier la 1re moitié sur la 2e » font gagner du temps.
 - Les réglages moins courants sont rangés dans **« Plus de réglages de la piste »**.
 - Un petit **« ? »** à côté d'un réglage l'explique en une phrase.
@@ -176,6 +181,7 @@ Par défaut, la piste 1 joue sur le canal 1, la piste 2 sur le canal 2, la piste
 - **Sous-pas** : 1 à 4 notes rapides dans la durée du pas, pour des roulements.
 - **Longueur de note** : 25, 50, 75 ou 95 % du pas.
 - **Note aléatoire** : ce pas joue toujours une note au hasard dans la gamme.
+- **CC** : une valeur de contrôle MIDI (0 à 127) envoyée à chaque pas, sur le canal de la piste. Choisis le numéro de CC sous les barres (74 = filtre sur beaucoup de synthés, 71 = résonance) et coche « Envoyer ce CC ». La boîte n'envoie la valeur que quand elle change. **Ton synthé doit accepter ce CC** : regarde sa documentation MIDI.
 
 ### Garder ses séquences
 La boîte garde **une** séquence (les 4 pistes) dans sa mémoire. Pour en garder d'autres, utilise « Exporter les réglages » (section 5) : le fichier contient aussi la séquence, et « Importer » la remet dans la boîte. Les 4 préréglages, eux, gardent les réglages des jacks, du MIDI et le tempo, mais pas la séquence.

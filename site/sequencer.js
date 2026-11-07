@@ -16,14 +16,19 @@ const SEQ_T = {
     more: "Plus de réglages de la piste",
     ovHelp: "Les 4 pistes : clique une ligne pour la modifier, et sa pastille pour couper ou activer son MIDI.",
     stepsHelp: "Clique un pas pour l'allumer ou l'éteindre.", stepsHelpEu: "En euclidien, les coups se règlent avec « Coups » et « Rotation ».",
-    lanes: { note: "Note", vel: "Vélocité", prob: "Probabilité", sub: "Sous-pas", len: "Longueur", ch: "Canal", rand: "Aléatoire" },
+    lanes: { note: "Note", vel: "Vélocité", prob: "Probabilité", sub: "Sous-pas", len: "Longueur", ch: "Canal", rand: "Aléatoire", cc: "CC" },
     laneHelp: {
       note: "Glisse vers le haut ou le bas sur un pas pour changer sa note : seules les notes de la gamme sont possibles. Tu peux balayer plusieurs pas d'un coup.",
       vel: "Hauteur = force de la note.", prob: "Hauteur = chance que le pas joue (100 % en haut).",
       sub: "1 à 4 notes rapides dans le pas (roulements).", len: "Durée de la note : 25, 50, 75 ou 95 % du pas.",
-      ch: "Canal MIDI du pas : P = celui de la piste, 1 à 16, A = ALL.", rand: "Clique pour qu'un pas joue une note au hasard dans la gamme."
+      ch: "Canal MIDI du pas : P = celui de la piste, 1 à 16, A = ALL.", rand: "Clique pour qu'un pas joue une note au hasard dans la gamme.",
+      cc: "Une valeur de contrôle (0 à 127) envoyée à chaque pas : par exemple le filtre (CC 74) ou la résonance (CC 71). Le synthé doit accepter ce CC."
     },
     octDown: "▼ octave", octUp: "▲ octave",
+    mute: "Couper", solo: "Solo", undo: "↶ Annuler", undoNone: "Rien à annuler",
+    invNotes: "Inventer des notes", invRhythm: "Inventer un rythme", toSteps: "Euclidien → pas à pas",
+    copyTo: "Copier cette piste vers", copyGo: "Copier", copied: "Piste {a} copiée vers la piste {b}",
+    ccNum: "CC n°", ccOn: "Envoyer ce CC", ccOff: "Coche « Envoyer ce CC » pour que la boîte l'envoie.",
     sFill: "Tout allumer", sClear: "Tout éteindre", sCopyHalf: "Copier la 1re moitié sur la 2e",
     custom: "Gamme CUSTOM : clique les notes à garder",
     micro: "Gamme microtonale : la boîte envoie un pitch bend (règle ton synthé sur ±2 demi-tons).",
@@ -44,14 +49,19 @@ const SEQ_T = {
     more: "More track settings",
     ovHelp: "The 4 tracks: click a row to edit it, and its pill to mute or unmute its MIDI.",
     stepsHelp: "Click a step to turn it on or off.", stepsHelpEu: "In Euclidean mode, hits are set with “Hits” and “Rotation”.",
-    lanes: { note: "Note", vel: "Velocity", prob: "Probability", sub: "Substeps", len: "Length", ch: "Channel", rand: "Random" },
+    lanes: { note: "Note", vel: "Velocity", prob: "Probability", sub: "Substeps", len: "Length", ch: "Channel", rand: "Random", cc: "CC" },
     laneHelp: {
       note: "Drag up or down on a step to change its note: only the notes of the scale are possible. Sweep across several steps at once.",
       vel: "Height = how hard the note plays.", prob: "Height = chance that the step plays (100 % at the top).",
       sub: "1 to 4 fast notes within the step (rolls).", len: "Note length: 25, 50, 75 or 95 % of the step.",
-      ch: "MIDI channel of the step: P = the track's, 1 to 16, A = ALL.", rand: "Click so that a step plays a random note of the scale."
+      ch: "MIDI channel of the step: P = the track's, 1 to 16, A = ALL.", rand: "Click so that a step plays a random note of the scale.",
+      cc: "A control value (0 to 127) sent on each step: for example the filter (CC 74) or resonance (CC 71). The synth must accept this CC."
     },
     octDown: "▼ octave", octUp: "▲ octave",
+    mute: "Mute", solo: "Solo", undo: "↶ Undo", undoNone: "Nothing to undo",
+    invNotes: "Invent notes", invRhythm: "Invent a rhythm", toSteps: "Euclidean → steps",
+    copyTo: "Copy this track to", copyGo: "Copy", copied: "Track {a} copied to track {b}",
+    ccNum: "CC #", ccOn: "Send this CC", ccOff: "Tick “Send this CC” so that the box sends it.",
     sFill: "All on", sClear: "All off", sCopyHalf: "Copy the 1st half onto the 2nd",
     custom: "CUSTOM scale: click the notes to keep",
     micro: "Microtonal scale: the box sends a pitch bend (set your synth to ±2 semitones).",
@@ -78,6 +88,9 @@ const SEQ = {
   sel: 0, step: 0,
   timers: {},
   loaded: false,
+  cc: null,              // [{num, on, vals[32]}] x4
+  mute: 0, solo: 0,      // live masks
+  undo: [],
 };
 
 function defaultSequence() {
@@ -94,6 +107,7 @@ function defaultSequence() {
     return [(v ? 0x80 : 0) | (v || 48), 100, 0, 4];
   }));
   SEQ.custom = 0xFFF;
+  SEQ.cc = [0, 1, 2, 3].map(() => ({ num: 74, on: 0, vals: Array.from({ length: 32 }, (_, s) => 32 + ((s * 6) % 64)) }));
 }
 
 // ------------------------------------------------------------------ model --
@@ -158,7 +172,15 @@ function seqOnStep(d) {
   seqRenderSoon();
 }
 function seqOnCustom(d) { SEQ.custom = (d[0] | (d[1] << 7)) & 0xFFF; seqRenderSoon(); }
+function seqOnCC(d) {
+  if (!SEQ.cc) defaultSequence();
+  const t = d[0];
+  if (t > 3 || d.length < 35 || SEQ.timers["c" + t]) return;
+  SEQ.cc[t] = { num: d[1], on: d[2], vals: d.slice(3, 35) };
+  seqRenderSoon();
+}
 function seqOnPlayhead(d, now) {
+  if (d.length >= 7) { SEQ.mute = d[5]; SEQ.solo = d[6]; }
   SEQ.heads = d.slice(0, 4);
   for (let t = 0; t < 4; t++) if (d[4] & (1 << t)) SEQ.playedAt[t] = now;
   seqRenderHeads();
@@ -182,9 +204,46 @@ function seqSendStep(t, s) {
     send(enc(0x18, t, s, ...b.map(x => x & 0x7F), hi));
   }, 150);
 }
+function seqSendCCStep(t, s) {
+  const key = `c${t}.${s}`;
+  clearTimeout(SEQ.timers[key]);
+  SEQ.timers[key] = setTimeout(() => { delete SEQ.timers[key]; send(enc(0x1D, t, s, SEQ.cc[t].vals[s])); }, 150);
+}
+function seqSendCCTrack(t) {
+  clearTimeout(SEQ.timers["c" + t]);
+  SEQ.timers["c" + t] = setTimeout(() => { delete SEQ.timers["c" + t]; send(enc(0x1E, t, SEQ.cc[t].num, SEQ.cc[t].on)); }, 200);
+}
+function seqSendMute() { send(enc(0x1C, SEQ.mute, SEQ.solo)); }
+
+// ------------------------------------------------------------------- undo --
+const seqState = () => JSON.stringify({ tracks: SEQ.tracks, steps: SEQ.steps, cc: SEQ.cc, custom: SEQ.custom });
+function pushUndo() {
+  if (!SEQ.tracks) return;
+  SEQ.undo.push(seqState());
+  if (SEQ.undo.length > 40) SEQ.undo.shift();
+}
+function seqUndo() {
+  const prev = SEQ.undo.pop();
+  if (!prev) { log(t("undoNone")); return; }
+  const p = JSON.parse(prev);
+  for (let tr = 0; tr < 4; tr++) {
+    if (JSON.stringify(p.tracks[tr]) !== JSON.stringify(SEQ.tracks[tr])) { SEQ.tracks[tr] = p.tracks[tr]; seqSendTrack(tr); }
+    for (let s = 0; s < 32; s++) if (p.steps[tr][s].join() !== SEQ.steps[tr][s].join()) { SEQ.steps[tr][s] = p.steps[tr][s]; seqSendStep(tr, s); }
+    if (p.cc[tr].num !== SEQ.cc[tr].num || p.cc[tr].on !== SEQ.cc[tr].on) { SEQ.cc[tr].num = p.cc[tr].num; SEQ.cc[tr].on = p.cc[tr].on; seqSendCCTrack(tr); }
+    for (let s = 0; s < 32; s++) if (p.cc[tr].vals[s] !== SEQ.cc[tr].vals[s]) { SEQ.cc[tr].vals[s] = p.cc[tr].vals[s]; seqSendCCStep(tr, s); }
+  }
+  if (p.custom !== SEQ.custom) { SEQ.custom = p.custom; send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); }
+  SEQ.win = [null, null, null, null];
+  seqRender();
+}
+
 async function seqSendAll() {   // after an import: everything, paced
   for (let t = 0; t < 4; t++) { await send(enc(0x19, t, ...TRACK_KEYS.map(k => SEQ.tracks[t][k]))); await sleep(15); }
   await send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); await sleep(15);
+  for (let t = 0; t < 4; t++) {
+    await send(enc(0x1E, t, SEQ.cc[t].num, SEQ.cc[t].on)); await sleep(12);
+    for (let s = 0; s < 32; s++) { await send(enc(0x1D, t, s, SEQ.cc[t].vals[s])); await sleep(8); }
+  }
   for (let t = 0; t < 4; t++) for (let s = 0; s < 32; s++) {
     const b = SEQ.steps[t][s], hi = b.reduce((h, x, i) => h | ((x >> 7) << i), 0);
     await send(enc(0x18, t, s, ...b.map(x => x & 0x7F), hi)); await sleep(12);
@@ -192,7 +251,7 @@ async function seqSendAll() {   // after an import: everything, paced
 }
 
 // -------------------------------------------------------------- rendering --
-const LANES = ["note", "vel", "prob", "sub", "len", "ch", "rand"];
+const LANES = ["note", "vel", "prob", "sub", "len", "ch", "rand", "cc"];
 const LANE_LEVELS = { vel: 127, prob: 8, sub: 4, len: 4, ch: 18, rand: 2 };
 if (!SEQ.lane) SEQ.lane = "note";
 if (!SEQ.win) SEQ.win = [null, null, null, null];
@@ -244,9 +303,12 @@ function seqRender() {
   const overview = [0, 1, 2, 3].map(ti => {
     const tk = SEQ.tracks[ti];
     const cells = Array.from({ length: 32 }, (_, s) => `<i class="${s >= tk.length ? "o" : hitOf(ti, s) ? "h" : ""}" data-ov="${s}"></i>`).join("");
-    return `<div class="ovrow ${ti === t0 ? "sel" : ""} ${tk.mode ? "" : "off"}" data-tab="${ti}">
+    const silent = (SEQ.mute & (1 << ti)) || (SEQ.solo && !(SEQ.solo & (1 << ti)));
+    return `<div class="ovrow ${ti === t0 ? "sel" : ""} ${tk.mode ? "" : "off"} ${silent ? "silent" : ""}" data-tab="${ti}">
       <button class="ovname" data-tab="${ti}"><b>${esc(t("track"))} ${ti + 1}</b><span>${esc(t("tModes")[tk.mode])}</span><i class="dot"></i></button>
-      <button class="pill ${tk.midi ? "on" : ""}" data-midi="${ti}" ${tk.mode ? "" : "disabled"}>${esc(midiPill(tk))}</button>
+      <span class="ms"><button class="pill ${tk.midi ? "on" : ""}" data-midi="${ti}" ${tk.mode ? "" : "disabled"}>${esc(midiPill(tk))}</button>
+        <button class="mbtn ${SEQ.mute & (1 << ti) ? "on" : ""}" data-mute="${ti}" title="${esc(t("mute"))}">M</button>
+        <button class="sbtn ${SEQ.solo & (1 << ti) ? "on" : ""}" data-solo="${ti}" title="${esc(t("solo"))}">S</button></span>
       <div class="ovsteps">${cells}</div></div>`;
   }).join("");
 
@@ -288,20 +350,28 @@ function seqRender() {
     </details>`;
 
   box.innerHTML = `
-    <div class="ovhead small">${esc(t("ovHelp"))}${helpBtn("sMidi")}</div>
+    <div class="ovhead small">${esc(t("ovHelp"))}${helpBtn("sMidi")}<button class="undo" data-undo="1" ${SEQ.undo.length ? "" : "disabled"}>${esc(t("undo"))}</button></div>
     <div class="ov">${overview}</div>
     <div class="ed ${k.mode ? "" : "muted"}">
       ${head}
       <div class="steps32">${cells}</div>
       <p class="small">${esc(k.mode === 2 ? t("stepsHelpEu") : t("stepsHelp"))}</p>
       <div class="lanetabs">${laneTabs}</div>
+      ${lane === "cc" && !SEQ.cc[t0].on ? `<p class="warn">${esc(t("ccOff"))}</p>` : ""}
       <div class="lane" data-lanebox="${lane}">${laneBars()}</div>
       <div class="lanefoot"><span class="small">${esc(t("laneHelp")[lane])}</span>
         ${lane === "note" ? `<button data-oct="-1">${esc(t("octDown"))}</button><button data-oct="1">${esc(t("octUp"))}</button>` : ""}
+        ${lane === "cc" ? `<label class="lab">${esc(t("ccNum"))} <input type="number" min="0" max="127" value="${SEQ.cc[t0].num}" data-ccnum="1"></label>
+          <label class="chk"><input type="checkbox" data-ccon="1" ${SEQ.cc[t0].on ? "checked" : ""}> ${esc(t("ccOn"))}</label>` : ""}
       </div>
       <div class="tools">
+        <button data-act="invnotes">🎲 ${esc(t("invNotes"))}</button>
+        <button data-act="invrhythm">🎲 ${esc(t("invRhythm"))}</button>
+        ${k.mode === 2 ? `<button data-act="tosteps">${esc(t("toSteps"))}</button>` : ""}
         ${k.mode === 1 ? `<button data-act="fill">${esc(t("sFill"))}</button><button data-act="clear">${esc(t("sClear"))}</button>` : ""}
         <button data-act="half">${esc(t("sCopyHalf"))}</button>
+        <span class="copyto">${esc(t("copyTo"))} <select data-copyto="1">${[0, 1, 2, 3].filter(i => i !== t0).map(i => `<option value="${i}">${esc(t("track"))} ${i + 1}</option>`).join("")}</select>
+          <button data-act="copy">${esc(t("copyGo"))}</button></span>
       </div>
       ${more}
     </div>`;
@@ -328,6 +398,7 @@ function laneValue(t, s) {
     case "len": return { v: LEN_PCT[o.len] / 100, label: LEN_PCT[o.len] + "%" };
     case "ch": return { v: (o.ch + 1) / 18, label: o.ch === 0 ? "P" : o.ch > 16 ? "A" : o.ch };
     case "rand": return { v: o.rand ? 1 : 0.06, label: o.rand ? "?" : "" };
+    case "cc": { const v = SEQ.cc[t].vals[s]; return { v: Math.max(0.03, v / 127), label: v }; }
   }
 }
 function laneBars() {
@@ -365,6 +436,7 @@ function laneSet(s, y) {
     case "len": o.len = Math.min(3, Math.floor(y * 4)); break;
     case "ch": o.ch = Math.min(17, Math.floor(y * 18)); break;
     case "rand": o.rand = y > 0.5; break;
+    case "cc": SEQ.cc[t0].vals[s] = Math.round(y * 127); seqSendCCStep(t0, s); return;
   }
   SEQ.steps[t0][s] = stepBytes(o);
   seqSendStep(t0, s);
@@ -385,7 +457,8 @@ function seqRenderHeads() {
 }
 
 // ---------------------------------------------------------------- editing --
-function setTrack(key, v, rerender = true) {
+function setTrack(key, v, rerender = true, snapshot = true) {
+  if (snapshot) pushUndo();
   const k = SEQ.tracks[SEQ.sel];
   k[key] = v;
   k.length = Math.max(1, Math.min(32, k.length));
@@ -413,18 +486,59 @@ function seqBind() {
     if (d.inc) { const [key, n] = d.inc.split(":"); setTrack(key, SEQ.tracks[SEQ.sel][key] + +n); return; }
     if (d.lane) { SEQ.lane = d.lane; seqRender(); return; }
     if (d.oct) { SEQ.win[SEQ.sel] = Math.max(0, Math.min(96, (SEQ.win[SEQ.sel] || 48) + 12 * +d.oct)); refreshLane(); return; }
-    if (d.cm != null) { SEQ.custom ^= 1 << +d.cm; if (!SEQ.custom) SEQ.custom = 1; send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); seqRender(); return; }
+    if (d.undo) { seqUndo(); return; }
+    if (d.mute != null) { SEQ.mute ^= 1 << +d.mute; seqSendMute(); seqRender(); return; }
+    if (d.solo != null) { SEQ.solo ^= 1 << +d.solo; seqSendMute(); seqRender(); return; }
+    if (d.cm != null) { pushUndo(); SEQ.custom ^= 1 << +d.cm; if (!SEQ.custom) SEQ.custom = 1; send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); seqRender(); return; }
     if (d.step != null) {
       const k = SEQ.tracks[SEQ.sel], s = +d.step;
       if (k.mode !== 1 || s >= k.length) return;
+      pushUndo();
       const o = stepObj(SEQ.steps[SEQ.sel][s]); o.on = !o.on;
       SEQ.steps[SEQ.sel][s] = stepBytes(o); seqSendStep(SEQ.sel, s); seqRender();
       return;
     }
     if (d.act) {
-      const t0 = SEQ.sel;
+      const t0 = SEQ.sel, k = SEQ.tracks[t0];
+      pushUndo();
+      if (d.act === "copy") {
+        const to = +box.querySelector("[data-copyto]").value, keep = { channel: SEQ.tracks[to].channel, midi: SEQ.tracks[to].midi };
+        SEQ.tracks[to] = Object.assign({}, k, keep);
+        SEQ.steps[to] = SEQ.steps[t0].map(b => b.slice());
+        SEQ.cc[to] = { num: SEQ.cc[t0].num, on: SEQ.cc[t0].on, vals: SEQ.cc[t0].vals.slice() };
+        seqSendTrack(to); seqSendCCTrack(to);
+        for (let s = 0; s < 32; s++) { seqSendStep(to, s); seqSendCCStep(to, s); }
+        log(tf("copied", { a: t0 + 1, b: to + 1 }));
+        SEQ.sel = to; SEQ.win[to] = null; seqRender();
+        return;
+      }
+      if (d.act === "tosteps") {
+        for (let s = 0; s < 32; s++) { const o = stepObj(SEQ.steps[t0][s]); o.on = s < k.length && hitOf(t0, s); SEQ.steps[t0][s] = stepBytes(o); seqSendStep(t0, s); }
+        setTrack("mode", 1, true, false);
+        return;
+      }
+      if (d.act === "invnotes") {
+        const win = noteWindow(t0);
+        let i = Math.floor(win.length / 2);
+        for (let s = 0; s < 32; s++) {   // a random walk in the scale: melodic rather than jumpy
+          i = Math.max(0, Math.min(win.length - 1, i + [-2, -1, -1, 0, 1, 1, 2, 3, -3][Math.floor(Math.random() * 9)]));
+          const o = stepObj(SEQ.steps[t0][s]); o.note = win[i].raw; SEQ.steps[t0][s] = stepBytes(o); seqSendStep(t0, s);
+        }
+        seqRender();
+        return;
+      }
+      if (d.act === "invrhythm") {
+        if (k.mode === 2) { setTrack("hits", 2 + Math.floor(Math.random() * (k.length - 2)), false, false); setTrack("rotation", Math.floor(Math.random() * k.length), true, false); return; }
+        for (let s = 0; s < 32; s++) {
+          const o = stepObj(SEQ.steps[t0][s]);
+          o.on = s % 4 === 0 ? Math.random() < 0.8 : Math.random() < 0.35;
+          SEQ.steps[t0][s] = stepBytes(o); seqSendStep(t0, s);
+        }
+        seqRender();
+        return;
+      }
       for (let s = 0; s < 32; s++) {
-        if (d.act === "half") { if (s >= 16) SEQ.steps[t0][s] = SEQ.steps[t0][s - 16].slice(); else continue; }
+        if (d.act === "half") { if (s >= 16) { SEQ.steps[t0][s] = SEQ.steps[t0][s - 16].slice(); SEQ.cc[t0].vals[s] = SEQ.cc[t0].vals[s - 16]; seqSendCCStep(t0, s); } else continue; }
         else { const o = stepObj(SEQ.steps[t0][s]); o.on = d.act === "fill"; SEQ.steps[t0][s] = stepBytes(o); }
         seqSendStep(t0, s);
       }
@@ -434,14 +548,22 @@ function seqBind() {
   box.addEventListener("change", e => {
     const el = e.target;
     if (el.dataset.tk && el.tagName === "SELECT") setTrack(el.dataset.tk, +el.value);
-    if (el.dataset.tk && el.type === "range") seqRender();
+    if (el.dataset.tk && el.type === "range") { SEQ.sliding = false; seqRender(); }
+    if (el.dataset.ccnum) { pushUndo(); SEQ.cc[SEQ.sel].num = Math.max(0, Math.min(127, Math.round(+el.value) || 0)); seqSendCCTrack(SEQ.sel); seqRender(); }
+    if (el.dataset.ccon) { pushUndo(); SEQ.cc[SEQ.sel].on = el.checked ? 1 : 0; seqSendCCTrack(SEQ.sel); seqRender(); }
   });
   box.addEventListener("input", e => {
     const el = e.target;
     if (el.dataset.tk && el.type === "range") {
       const v = +el.value, f = FMT[el.dataset.tk] || (x => x);
       el.nextElementSibling.textContent = f(v);
-      setTrack(el.dataset.tk, v, false);
+      setTrack(el.dataset.tk, v, false, !SEQ.sliding);
+      SEQ.sliding = true;
+    }
+  });
+  document.addEventListener("keydown", e => {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "z" && !e.target.matches("input, select, textarea")) {
+      if (SEQ.tracks) { e.preventDefault(); seqUndo(); }
     }
   });
   box.addEventListener("toggle", e => { if (e.target.matches("details.more")) SEQ.moreOpen = e.target.open; }, true);
@@ -462,6 +584,7 @@ function seqBind() {
     if (!lane) return;
     e.preventDefault();
     SEQ.dragging = true; SEQ.lastPainted = -1;
+    pushUndo();
     if (SEQ.lane === "rand") {
       const r = lane.getBoundingClientRect(), s = Math.max(0, Math.min(31, Math.floor((e.clientX - r.left) / r.width * 32)));
       SEQ.randValue = stepObj(SEQ.steps[SEQ.sel][s]).rand ? 0 : 1;
@@ -491,7 +614,8 @@ function seqDemoTick(st, now) {
     if (k.direction === 3) pos = Math.floor(Math.random() * L);
     SEQ.heads[t] = pos; moved = true;
     const o = stepObj(SEQ.steps[t][pos]);
-    if (hitOf(t, pos) && Math.random() * 100 < k.prob && Math.random() < PROB_LEVELS[o.prob] / 100) {
+    const audible = !(SEQ.mute & (1 << t)) && (!SEQ.solo || (SEQ.solo & (1 << t)));
+    if (audible && hitOf(t, pos) && Math.random() * 100 < k.prob && Math.random() < PROB_LEVELS[o.prob] / 100) {
       SEQ.playedAt[t] = now;
       if (k.midi) clock.midiAt = now;
     }

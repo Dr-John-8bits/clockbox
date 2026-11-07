@@ -161,7 +161,8 @@ const uint8_t STEP_ON = 0x80, STEP_RANDOM = 0x10;
 // EEPROM layout (version 6):
 //   0 'C', 1 'B', 2 version, 3..5 jack places, 8.. config (23 bytes),
 //   64.. 4 presets of 26 bytes (magic, config, tempo in 0.1 BPM, 0 = none),
-//   176.. 4 tracks of 16 bytes, 240..241 custom scale mask, 512.. steps (4 x 32 x 4 bytes)
+//   176.. 4 tracks of 16 bytes, 240..241 custom scale mask, 243 CC magic, 244..251 CC number and on per track,
+//   256..383 CC value per step (4 x 32), 512.. steps (4 x 32 x 4 bytes)
 const uint8_t  EEPROM_MAGIC0 = 'C', EEPROM_MAGIC1 = 'B', EEPROM_VERSION = 6;
 const uint8_t  EEPROM_POSITIONS = 3;
 const uint8_t  EEPROM_CONFIG = 8;
@@ -169,6 +170,8 @@ const uint8_t  PRESET_COUNT = 4;
 const uint16_t EEPROM_PRESETS = 64, PRESET_STRIDE = 1 + CONFIG_SIZE + 2;
 const uint8_t  PRESET_MAGIC = 0x5A;
 const uint16_t EEPROM_TRACKS = 176, EEPROM_CUSTOM = 240, EEPROM_STEPS = 512;
+const uint16_t EEPROM_CC_MAGIC = 243, EEPROM_CC_TRACK = 244, EEPROM_CC_STEPS = 256;
+const uint8_t  CC_MAGIC = 0xCC, DEFAULT_CC = 74;   // 74 = filter cutoff on many synths
 // firmware 2.4 (EEPROM version 5), for the migration
 const uint8_t  V5_CONFIG_SIZE = 50;
 const uint16_t V5_PRESET_STRIDE = 56;
@@ -188,6 +191,9 @@ const uint16_t V5_PRESET_STRIDE = 56;
 //     19 t <track, 16 bytes>  set a track
 //     1A                      send the whole sequence (tracks, custom scale, steps)
 //     1B lo hi                custom scale mask (12 bits)
+//     1C mute solo            live mute and solo masks (4 bits each, not saved)
+//     1D t s value            CC value of a step
+//     1E t number on          CC number of a track, and 1 = send it
 //   box -> computer
 //     01 <state>              see sendState()
 //     02 <config> presetMask  current settings, and which preset slots are filled
@@ -195,14 +201,17 @@ const uint16_t V5_PRESET_STRIDE = 56;
 //     04 t s <step, 5 bytes>  a step
 //     05 p0 p1 p2 p3 mask     playheads (7F = silent) and which tracks played a note
 //     06 lo hi                custom scale mask
+//     07 t number on <32>     CC of a track: number, on, value of each step
+//   (05 also carries the mute and solo masks after the played mask)
 // The MIDI clock itself (F8 / FA / FB / FC / F2) is on the same line.
-const uint8_t FW_VERSION_MAJOR = 2, FW_VERSION_MINOR = 5;
+const uint8_t FW_VERSION_MAJOR = 2, FW_VERSION_MINOR = 6;
 const uint8_t SYSEX_ID = 0x7D, SYSEX_C = 'C', SYSEX_B = 'B';
 const uint8_t CMD_STATE = 0x01, CMD_CONFIG = 0x02, CMD_TRACK = 0x03, CMD_STEP = 0x04,
               CMD_PLAYHEAD = 0x05, CMD_CUSTOM = 0x06,
               CMD_HELLO = 0x10, CMD_SET_MODE = 0x11, CMD_IDENTIFY = 0x12, CMD_SET_POSITIONS = 0x13,
               CMD_SET_CONFIG = 0x14, CMD_SET_TEMPO = 0x15, CMD_TRANSPORT = 0x16, CMD_PRESET = 0x17,
-              CMD_SET_STEP = 0x18, CMD_SET_TRACK = 0x19, CMD_DUMP = 0x1A, CMD_SET_CUSTOM = 0x1B;
+              CMD_SET_STEP = 0x18, CMD_SET_TRACK = 0x19, CMD_DUMP = 0x1A, CMD_SET_CUSTOM = 0x1B,
+              CMD_MUTE = 0x1C, CMD_SET_CC_STEP = 0x1D, CMD_SET_CC_TRACK = 0x1E, CMD_CC = 0x07;
 const uint32_t IDENTIFY_MS = 15000;
 const uint16_t REPORT_MIN_INTERVAL_MS = 30;
 const uint8_t  REPORT_POT_STEP = 3;
@@ -250,6 +259,10 @@ Config            cfg;
 Track             tracks[TRACK_COUNT];
 uint8_t           steps[TRACK_COUNT][MAX_STEPS][STEP_BYTES];
 uint16_t          customMask = 0xFFF;
+uint8_t           ccNumber[TRACK_COUNT], ccOn[TRACK_COUNT];   // a CC sent on every step of the track
+uint8_t           ccValue[TRACK_COUNT][MAX_STEPS];
+uint8_t           ccLast[TRACK_COUNT];                       // last value sent, 0xFF = none
+volatile uint8_t  muteMask = 0, soloMask = 0;               // live, not saved
 TrackRun          runs[TRACK_COUNT];
 volatile uint8_t  transport = STOPPED;
 volatile bool     pendingStart = false;      // MIDI Start right before the next clock
@@ -482,8 +495,13 @@ static void beginStep(uint8_t t) {
   const uint8_t *s = steps[t][r.pos];
   bool on = k.mode == TRACK_STEPS ? (s[0] & STEP_ON) : euclidHit(k.length, k.hits, k.rotation, r.pos);
   uint8_t level = s[2] >> 5;
-  r.active = on && chance(k.prob) && (level == 0 || (rnd() & 7) >= level);
+  bool audible = !(muteMask & (1 << t)) && (!soloMask || (soloMask & (1 << t)));
+  r.active = audible && on && chance(k.prob) && (level == 0 || (rnd() & 7) >= level);
   playheadDirty = true;
+  if (audible && k.midi && ccOn[t] && ccValue[t][r.pos] != ccLast[t]) {   // CC on every step, when it changes
+    ccLast[t] = ccValue[t][r.pos];
+    midiTo(k.channel, 0xB0, ccNumber[t], ccLast[t]);
+  }
   if (!r.active) return;
 
   uint8_t div = TRACK_DIV_TICKS[k.division];
@@ -555,6 +573,7 @@ static void setRuns(uint32_t pos) {
     r.noteOn = false;
     r.fresh = r.count % cycleLength(tracks[t]) == 0;
     r.pos = r.count % tracks[t].length;
+    ccLast[t] = 0xFF;
   }
 }
 
@@ -698,6 +717,24 @@ static void saveTrack(uint8_t t) {
 static void saveStep(uint8_t t, uint8_t s) {
   for (uint8_t i = 0; i < STEP_BYTES; i++)
     EEPROM.update(EEPROM_STEPS + ((uint16_t)t * MAX_STEPS + s) * STEP_BYTES + i, steps[t][s][i]);
+}
+
+static void saveCC(uint8_t t) {
+  EEPROM.update(EEPROM_CC_MAGIC, CC_MAGIC);
+  EEPROM.update(EEPROM_CC_TRACK + t * 2, ccNumber[t]);
+  EEPROM.update(EEPROM_CC_TRACK + t * 2 + 1, ccOn[t]);
+  for (uint8_t s = 0; s < MAX_STEPS; s++) EEPROM.update(EEPROM_CC_STEPS + t * MAX_STEPS + s, ccValue[t][s]);
+}
+
+static void loadCC() {
+  bool ok = EEPROM.read(EEPROM_CC_MAGIC) == CC_MAGIC;
+  for (uint8_t t = 0; t < TRACK_COUNT; t++) {
+    ccNumber[t] = ok ? EEPROM.read(EEPROM_CC_TRACK + t * 2) & 0x7F : DEFAULT_CC;
+    ccOn[t] = ok ? EEPROM.read(EEPROM_CC_TRACK + t * 2 + 1) & 1 : 0;
+    for (uint8_t s = 0; s < MAX_STEPS; s++) ccValue[t][s] = ok ? EEPROM.read(EEPROM_CC_STEPS + t * MAX_STEPS + s) & 0x7F : 64;
+    ccLast[t] = 0xFF;
+  }
+  if (!ok) for (uint8_t t = 0; t < TRACK_COUNT; t++) saveCC(t);
 }
 
 static void saveCustom() {
@@ -858,6 +895,8 @@ static void loadSettings() {
     saveSequence();
     saveConfig();
   }
+
+  loadCC();
 
   uint8_t seen = 0;   // positions must be a permutation of 0..JACK_COUNT-1
   for (uint8_t j = 0; j < JACK_COUNT; j++) {
@@ -1024,12 +1063,23 @@ static bool sendCustom() {
   return sendSysex(msg, sizeof(msg));
 }
 
+static bool sendCC(uint8_t t) {
+  uint8_t msg[8 + MAX_STEPS + 1];
+  msg[0] = 0xF0; msg[1] = SYSEX_ID; msg[2] = SYSEX_C; msg[3] = SYSEX_B; msg[4] = CMD_CC;
+  msg[5] = t; msg[6] = ccNumber[t]; msg[7] = ccOn[t];
+  memcpy(msg + 8, ccValue[t], MAX_STEPS);
+  msg[8 + MAX_STEPS] = 0xF7;
+  return sendSysex(msg, sizeof(msg));
+}
+
 static bool sendPlayheads() {
-  uint8_t msg[11] = {0xF0, SYSEX_ID, SYSEX_C, SYSEX_B, CMD_PLAYHEAD};
+  uint8_t msg[13] = {0xF0, SYSEX_ID, SYSEX_C, SYSEX_B, CMD_PLAYHEAD};
   for (uint8_t t = 0; t < TRACK_COUNT; t++)
     msg[5 + t] = transport == STOPPED || tracks[t].mode == TRACK_OFF ? 0x7F : runs[t].pos;
   msg[9] = playedMask;
-  msg[10] = 0xF7;
+  msg[10] = muteMask;
+  msg[11] = soloMask;
+  msg[12] = 0xF7;
   if (!sendSysex(msg, sizeof(msg))) return false;
   playedMask = 0;
   playheadDirty = false;
@@ -1133,6 +1183,25 @@ static void handleCommand() {
     case CMD_DUMP:
       dumpIndex = 0;
       break;
+    case CMD_MUTE:
+      if (n >= 2) { muteMask = d[0] & 0x0F; soloMask = d[1] & 0x0F; playheadDirty = true; }
+      break;
+    case CMD_SET_CC_STEP:
+      if (n >= 3 && d[0] < TRACK_COUNT && d[1] < MAX_STEPS) {
+        ccValue[d[0]][d[1]] = d[2] & 0x7F;
+        EEPROM.update(EEPROM_CC_STEPS + d[0] * MAX_STEPS + d[1], ccValue[d[0]][d[1]]);
+      }
+      break;
+    case CMD_SET_CC_TRACK:
+      if (n >= 3 && d[0] < TRACK_COUNT) {
+        ccNumber[d[0]] = d[1] & 0x7F;
+        ccOn[d[0]] = d[2] & 1;
+        ccLast[d[0]] = 0xFF;
+        EEPROM.update(EEPROM_CC_MAGIC, CC_MAGIC);
+        EEPROM.update(EEPROM_CC_TRACK + d[0] * 2, ccNumber[d[0]]);
+        EEPROM.update(EEPROM_CC_TRACK + d[0] * 2 + 1, ccOn[d[0]]);
+      }
+      break;
     case CMD_SET_CUSTOM:
       if (n >= 2) {
         customMask = (d[0] | ((uint16_t)d[1] << 7)) & 0xFFF;
@@ -1144,13 +1213,14 @@ static void handleCommand() {
 
 // Sequence dump, one message per call when there is room: tracks, custom scale, steps.
 static void continueDump() {
-  const int16_t total = TRACK_COUNT + 1 + TRACK_COUNT * MAX_STEPS;
+  const int16_t total = TRACK_COUNT * 2 + 1 + TRACK_COUNT * MAX_STEPS;
   while (dumpIndex >= 0 && dumpIndex < total) {
     bool sent;
     if (dumpIndex < TRACK_COUNT) sent = sendTrack(dumpIndex);
-    else if (dumpIndex == TRACK_COUNT) sent = sendCustom();
+    else if (dumpIndex < TRACK_COUNT * 2) sent = sendCC(dumpIndex - TRACK_COUNT);
+    else if (dumpIndex == TRACK_COUNT * 2) sent = sendCustom();
     else {
-      int16_t i = dumpIndex - TRACK_COUNT - 1;
+      int16_t i = dumpIndex - TRACK_COUNT * 2 - 1;
       sent = sendStep(i / MAX_STEPS, i % MAX_STEPS);
     }
     if (!sent) return;

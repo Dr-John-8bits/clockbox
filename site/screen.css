@@ -320,3 +320,12 @@
   @media (max-width: 1000px) { #jacksCard #jackRows { grid-template-columns: 1fr; } #jacksCard .jackrow + .jackrow { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 14px; } }
   .settings { max-width: 1180px; }
   #seq .ovhead { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  #seq .ovrow { grid-template-columns: 140px 250px 1fr; }
+  #seq .ms { display: inline-flex; gap: 6px; align-items: center; }
+  #seq .mbtn, #seq .sbtn { width: 30px; height: 28px; padding: 0; font-weight: 700; font-size: 12px; border-radius: 6px; }
+  #seq .mbtn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #seq .sbtn.on { background: #f5d36b; border-color: #d9b440; color: #222; }
+  #seq .ovrow.silent .ovsteps { opacity: .3; }
+  #seq .ovhead .undo { margin-left: auto; padding: 5px 12px; font-size: 13px; }
+  #seq .copyto { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  #seq .lanefoot input[type="number"] { width: 4.5em; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
