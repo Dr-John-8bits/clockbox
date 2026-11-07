@@ -180,9 +180,11 @@ function seqOnStep(d) {
   if (!SEQ.steps) defaultSequence();
   const [t, s] = d;
   if (t > 3 || s > 31 || SEQ.timers[`s${t}.${s}`]) return;
-  SEQ.steps[t][s] = [0, 1, 2, 3].map(i => d[2 + i] | (((d[6] >> i) & 1) << 7));
-  if (t === 3 && s === 31) { SEQ.loaded = true; log("séquence lue"); }
-  seqRenderSoon();
+  const b = [0, 1, 2, 3].map(i => d[2 + i] | (((d[6] >> i) & 1) << 7));
+  if (SEQ.loaded && b.join() !== SEQ.steps[t][s].join()) (SEQ.fresh = SEQ.fresh || new Set()).add(`${t}.${s}`);
+  SEQ.steps[t][s] = b;
+  if (t === 3 && s === 31) { SEQ.loaded = true; log("séquence lue"); seqRenderSoon(); return; }
+  if (SEQ.loaded) seqSoftSoon(); else seqRenderSoon();
 }
 function seqOnCustom(d) { SEQ.custom = (d[0] | (d[1] << 7)) & 0xFFF; seqRenderSoon(); }
 function seqOnCC(d) {
@@ -310,7 +312,37 @@ function noteWindow(t) {
   return all.filter(c => c.p.note >= lo && c.p.note < lo + 25);
 }
 
-let seqRenderTimer = null;
+let seqRenderTimer = null, seqSoftTimer = null;
+function seqSoftSoon() { if (!seqSoftTimer) seqSoftTimer = setTimeout(() => { seqSoftTimer = null; softRefresh(); }, 40); }
+
+// Update notes, hits and bars in place (steps changed by the box, e.g. the
+// generative mode), without rebuilding the card: works while a slider is held.
+function softRefresh() {
+  const box = $("seq");
+  if (!box || !SEQ.tracks || !box.querySelector(".steps32")) return;
+  const t0 = SEQ.sel, k = SEQ.tracks[t0];
+  refreshLane();
+  box.querySelectorAll(".steps32 .cell").forEach(c => {
+    const s = +c.dataset.step;
+    c.classList.toggle("hit", s < k.length && hitOf(t0, s));
+  });
+  box.querySelectorAll(".lane [data-lb]").forEach(c => c.classList.toggle("h", hitOf(t0, +c.dataset.lb)));
+  box.querySelectorAll(".ovrow").forEach(row => {
+    const ti = +row.dataset.tab, tk = SEQ.tracks[ti];
+    row.querySelectorAll("[data-ov]").forEach(c => { const s = +c.dataset.ov; c.classList.toggle("h", s < tk.length && hitOf(ti, s)); });
+  });
+  if (SEQ.fresh && SEQ.fresh.size) {   // a short flash on the notes that just changed
+    SEQ.fresh.forEach(key => {
+      const [ti, s] = key.split(".").map(Number);
+      if (ti !== t0) return;
+      box.querySelectorAll(`.steps32 [data-step="${s}"], .lane [data-lb="${s}"]`).forEach(el => {
+        el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+      });
+    });
+    SEQ.fresh.clear();
+  }
+  seqRenderHeads();
+}
 function seqRenderSoon() { if (!seqRenderTimer) seqRenderTimer = setTimeout(() => { seqRenderTimer = null; seqRender(); }, 60); }
 
 function seqRender() {
@@ -322,7 +354,7 @@ function seqRender() {
     return;
   }
   if (SEQ.dragging || (box.contains(document.activeElement) && document.activeElement.matches("input[type=range]"))) {
-    seqRenderHeads();
+    softRefresh();
     return;
   }
   const t0 = SEQ.sel, k = SEQ.tracks[t0];
@@ -700,11 +732,13 @@ function demoReinvent(t) {
       if (walk < base) walk = 2 * base - walk;
       if (walk > top) walk = 2 * top - walk;
       walk = Math.max(base, walk);
+      const before = b[0];
       b[0] = (b[0] & 0x80) | walk;
       if (g.rhythm && k.mode === 1 && Math.random() < 0.5) b[0] ^= 0x80;
+      if (b[0] !== before) (SEQ.fresh = SEQ.fresh || new Set()).add(`${t}.${s}`);
     } else walk = b[0] & 0x7F;
   }
-  if (t === SEQ.sel) seqRenderSoon();
+  seqSoftSoon();
 }
 
 // jacks in mode "Track n": lit while the track's note is recent

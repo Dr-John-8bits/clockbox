@@ -334,3 +334,5 @@
   #seq .gen.on { border-style: solid; border-color: var(--ok); background: color-mix(in srgb, var(--ok) 8%, var(--surface)); }
   #seq .gen input[type="range"] { width: 140px; accent-color: var(--ok); }
   .lockrow { margin: 4px 0 6px; font-weight: 600; }
+  @keyframes seqflash { from { box-shadow: 0 0 0 3px var(--ok); } to { box-shadow: 0 0 0 0 transparent; } }
+  #seq .flash { animation: seqflash .6s ease-out; }
