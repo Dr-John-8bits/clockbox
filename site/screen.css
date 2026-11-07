@@ -236,41 +236,87 @@
   .jx select, .jx input { width: 100%; }
 
   /* -------------------------------------------------- sequencer (v2.5) -- */
-  #seq .ttabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
-  #seq .ttab { position: relative; text-align: left; padding: 8px 12px; display: grid; gap: 2px; }
-  #seq .ttab span { font-size: 12px; color: var(--muted); }
-  #seq .ttab.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-  #seq .ttab .dot { position: absolute; right: 10px; top: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
-  #seq .ttab .dot.lit { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-  #seq .tform { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0 22px; margin-bottom: 8px; }
-  #seq .tform .fld, #seq .insp .fld { grid-template-columns: 9.5em 1fr auto; }
-  #seq .tform select { width: 100%; }
+  #seq .ov { display: grid; gap: 6px; margin-bottom: 16px; }
+  #seq .ovrow { display: grid; grid-template-columns: 150px 150px 1fr; gap: 10px; align-items: center;
+    padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); cursor: pointer; }
+  #seq .ovrow.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--surface); }
+  #seq .ovrow.off { opacity: .55; }
+  @media (max-width: 760px) { #seq .ovrow { grid-template-columns: 1fr 1fr; } #seq .ovsteps { grid-column: 1 / -1; } }
+  #seq .ovname { position: relative; text-align: left; border: 0; background: none; padding: 2px 4px; display: grid; }
+  #seq .ovname span { font-size: 12px; color: var(--muted); }
+  #seq .ovname .dot { position: absolute; right: 4px; top: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  #seq .ovname .dot.lit { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  #seq .pill { border-radius: 999px; font-size: 12.5px; padding: 5px 10px; }
+  #seq .pill.on { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600; }
+  #seq .pill:not(.on):not(:disabled) { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  #seq .ovsteps { display: grid; grid-template-columns: repeat(32, minmax(0, 1fr)); gap: 2px; }
+  #seq .ovsteps i { height: 14px; border-radius: 3px; background: var(--line); }
+  #seq .ovsteps i:nth-child(4n+1) { box-shadow: inset 2px 0 0 var(--muted); }
+  #seq .ovsteps i.h { background: var(--accent); }
+  #seq .ovsteps i.o { opacity: .25; }
+  #seq .ovsteps i.p { outline: 2px solid #f5d36b; }
+  #seq .ed.muted .steps32, #seq .ed.muted .lane { opacity: .45; }
+  #seq .bar1 { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 8px; }
+  #seq .lab { display: inline-flex; gap: 6px; align-items: center; font-size: 13.5px; color: var(--muted); }
+  #seq .lab select { color: var(--text); }
+  #seq .seg3 { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  #seq .seg3 button { border: 0; border-radius: 0; padding: 7px 12px; }
+  #seq .seg3 button + button { border-left: 1px solid var(--line); }
+  #seq .seg3 button[aria-pressed="true"] { background: var(--accent); color: #fff; font-weight: 600; }
+  #seq .stp { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  #seq .stp button { border: 0; border-radius: 0; padding: 5px 10px; font-weight: 700; }
+  #seq .stp b { min-width: 2.2em; text-align: center; color: var(--text); font-variant-numeric: tabular-nums; }
+  #seq .warn { color: var(--accent); font-size: 13px; font-weight: 600; margin: 4px 0; }
   #seq .custom { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 4px 0 10px; }
   #seq .custom .small { margin-right: 6px; }
   #seq .custom button { padding: 4px 7px; font-size: 12px; }
   #seq .custom button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-  #seq .grid { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 4px; margin: 12px 0; }
-  @media (max-width: 760px) { #seq .grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
-  #seq .cell { padding: 6px 2px; min-height: 46px; display: grid; align-content: center; justify-items: center; gap: 1px;
-    font-size: 11px; border-radius: 6px; background: var(--bg); position: relative; }
-  #seq .cell:nth-child(4n+1) { border-left-width: 3px; }
-  #seq .cell.hit { background: color-mix(in srgb, var(--accent) calc(var(--p) * 100%), var(--surface)); color: #fff; border-color: var(--accent); }
+  #seq .steps32, #seq .lane { display: grid; grid-template-columns: repeat(32, minmax(0, 1fr)); gap: 3px; }
+  #seq .cell { padding: 8px 0; min-height: 52px; display: grid; align-content: center; justify-items: center; gap: 2px;
+    font-size: 10.5px; border-radius: 6px; background: var(--bg); }
+  #seq .cell:nth-child(4n+1), #seq .lb:nth-child(4n+1) { box-shadow: inset 3px 0 0 var(--line); }
+  #seq .cell.hit { background: var(--accent); color: #fff; border-color: var(--accent); }
   #seq .cell.out { opacity: .3; }
-  #seq .cell.sel { outline: 2px solid var(--text); outline-offset: 1px; }
-  #seq .cell.head { box-shadow: 0 0 0 3px #f5d36b; }
-  #seq .cell .n { font-weight: 600; }
-  #seq .cell .m { font-size: 10px; opacity: .85; min-height: 1em; }
-  #seq .insp { border-top: 1px solid var(--line); padding-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0 22px; }
-  #seq .insp > b { grid-column: 1 / -1; font-size: 15px; }
-  #seq .insp input[type="number"] { width: 5em; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
-  #seq .sbtns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-  #seq .sbtns button { font-size: 13px; padding: 6px 10px; }
-  #seq .tform { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 18px; }
-  #seq .grp2 { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--bg); }
-  #seq .grp2 h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
-  #seq .chk.big { font-size: 15px; font-weight: 600; }
-  #seq .warn { color: var(--accent); font-size: 13px; font-weight: 600; margin: 4px 0; }
-  #seq .ok { color: var(--ok); font-size: 13px; margin: 4px 0; }
-  #seq .nbtns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 2px 0 6px; }
-  #seq .nbtns button { padding: 4px 10px; font-size: 13px; }
-  #seq .insp select[data-sk="note"] { min-width: 7em; }
+  #seq .cell.head, #seq .lb.head { outline: 3px solid #f5d36b; outline-offset: -1px; }
+  #seq .cell .n { font-weight: 600; white-space: nowrap; overflow: hidden; max-width: 100%; }
+  #seq .cell .m { font-size: 9.5px; opacity: .85; min-height: 1em; }
+  @media (max-width: 1000px) {
+    #seq .steps32, #seq .lane, #seq .ovsteps { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+    #seq .lane { height: auto; } #seq .lb { height: 110px; }
+  }
+  #seq .lanetabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 6px; }
+  #seq .lanetabs button { padding: 6px 12px; font-size: 13px; border-radius: 999px; }
+  #seq .lanetabs button[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+  #seq .lane { height: 150px; touch-action: none; user-select: none; cursor: ns-resize; }
+  #seq .lb { position: relative; background: var(--bg); border-radius: 5px; overflow: hidden; }
+  #seq .lb i { position: absolute; left: 2px; right: 2px; bottom: 0; background: color-mix(in srgb, var(--accent) 45%, var(--surface)); border-radius: 4px 4px 0 0; pointer-events: none; }
+  #seq .lb.h i { background: var(--accent); }
+  #seq .lb.o { opacity: .3; }
+  #seq .lb span { position: absolute; left: 0; right: 0; top: 3px; text-align: center; font-size: 9.5px; font-weight: 600; pointer-events: none; }
+  #seq .lanefoot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0 10px; }
+  #seq .lanefoot .small { flex: 1 1 300px; }
+  #seq .lanefoot button, #seq .tools button { padding: 5px 10px; font-size: 13px; }
+  #seq .tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
+  #seq details.more { border-top: 1px solid var(--line); padding-top: 10px; }
+  #seq details.more summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  #seq .tform { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 22px; margin-top: 8px; }
+  #seq .tform .fld { grid-template-columns: 11em 1fr auto; }
+
+  /* ------------------------------------------------------------- help -- */
+  .q { width: 20px; height: 20px; padding: 0; border-radius: 50%; font: 700 12px/18px -apple-system, sans-serif;
+    color: var(--muted); background: var(--surface); border: 1px solid var(--line); vertical-align: middle; flex: none; }
+  .q:hover { color: var(--accent); border-color: var(--accent); }
+  .card h2 .q { margin-left: 4px; }
+  .helppop { position: fixed; z-index: 50; background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .fld .q, .lab .q, .chk .q { margin-left: 4px; }
+
+  /* ------------------------------------------------------ page layout -- */
+  main#screen { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  #jacksCard #jackRows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; }
+  #jacksCard .jackrow { border-top: 0; padding-top: 4px; }
+  #jacksCard .jackrow + .jackrow { border-left: 1px solid var(--line); padding-left: 20px; }
+  #jacksCard .seg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 1000px) { #jacksCard #jackRows { grid-template-columns: 1fr; } #jacksCard .jackrow + .jackrow { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 14px; } }
+  .settings { max-width: 1180px; }
+  #seq .ovhead { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }

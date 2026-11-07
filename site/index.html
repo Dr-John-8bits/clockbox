@@ -6,8 +6,8 @@
 <title>clockbox — horloge MIDI et modulaire</title>
 <meta name="description" content="La clockbox : une horloge Arduino open source pour synchroniser machines MIDI et synthés modulaires. Avec son écran dans le navigateur.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b1b1b'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23ff3b30'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="screen.css?v=2.5">
-<link rel="stylesheet" href="site.css?v=2.5">
+<link rel="stylesheet" href="screen.css?v=2.6.1">
+<link rel="stylesheet" href="site.css?v=2.6.1">
 </head>
 <body>
 
@@ -62,7 +62,7 @@
 
   <section class="panel">
     <div class="card">
-      <h2 data-t="transportTitle">Transport et tempo</h2>
+      <h2><span data-t="transportTitle">Transport et tempo</span> <button class="q" data-help="transport" aria-label="?">?</button></h2>
       <div class="tbtns" id="transportBtns"></div>
       <div class="tempo">
         <label for="tempoInput" data-t="tempoLabel">Tempo (BPM)</label>
@@ -73,10 +73,8 @@
       <p class="small" data-t="tempoHelp"></p>
     </div>
     <div class="card">
-      <h2 data-t="jacksTitle">Les 3 jacks</h2>
-      <p data-t="jacksHelp"></p>
-      <div id="jackRows"></div>
-      <p class="small" data-t="probHelp"></p>
+    <h2 data-t="infoTitle">État</h2>
+    <dl class="kv" id="info"></dl>
     </div>
   </section>
 </main>
@@ -84,21 +82,27 @@
 <section class="settings" id="settings">
   <div id="oldFw" class="notice" hidden></div>
   <div class="card wide" id="seqCard">
-    <h2 data-t="seqTitle">Séquenceur</h2>
+    <h2><span data-t="seqTitle">Séquenceur</span> <button class="q" data-help="seq" aria-label="?">?</button></h2>
     <p data-t="seqHelp"></p>
     <div id="seq"></div>
   </div>
+  <div class="card wide" id="jacksCard">
+      <h2><span data-t="jacksTitle">Les 3 jacks</span> <button class="q" data-help="jacks" aria-label="?">?</button></h2>
+      <p data-t="jacksHelp"></p>
+      <div id="jackRows"></div>
+      <p class="small" data-t="probHelp"></p>
+  </div>
   <div class="card needs-config">
-    <h2 data-t="midiTitle">MIDI et mesure</h2>
+    <h2><span data-t="midiTitle">MIDI et mesure</span> <button class="q" data-help="midi" aria-label="?">?</button></h2>
     <div id="midiFields" class="fields"></div>
   </div>
   <div class="card needs-config">
-    <h2 data-t="presetsTitle">Préréglages</h2>
+    <h2><span data-t="presetsTitle">Préréglages</span> <button class="q" data-help="presets" aria-label="?">?</button></h2>
     <p data-t="presetsHelp"></p>
     <div id="presets"></div>
   </div>
   <div class="card needs-config">
-    <h2 data-t="backupTitle">Sauvegarde</h2>
+    <h2><span data-t="backupTitle">Sauvegarde</span> <button class="q" data-help="backup" aria-label="?">?</button></h2>
     <p data-t="backupHelp"></p>
     <div class="fwbtns">
       <button id="expBtn" data-t="expBtn">Exporter les réglages</button>
@@ -108,7 +112,7 @@
     <p class="small" id="backupMsg"></p>
   </div>
   <div class="card">
-    <h2 data-t="fwTitle">Mise à jour du firmware</h2>
+    <h2><span data-t="fwTitle">Mise à jour du firmware</span> <button class="q" data-help="fw" aria-label="?">?</button></h2>
     <p data-t="fwHelp"></p>
     <dl class="kv" id="fwVersions"></dl>
     <div class="fwbtns">
@@ -118,10 +122,6 @@
     </div>
     <div id="fwProgress" hidden><div class="pbar"><i id="fwBar"></i></div><p class="small" id="fwMsg"></p></div>
     <p class="small" data-t="fwSettings"></p>
-  </div>
-  <div class="card">
-    <h2 data-t="infoTitle">État</h2>
-    <dl class="kv" id="info"></dl>
   </div>
   <div class="card">
     <h2 data-t="howTitle">Rappel des commandes</h2>
@@ -290,8 +290,10 @@ window.SITE_T = {
   }
 };
 </script>
-<script src="scales.js?v=2.5"></script>
-<script src="screen.js?v=2.5"></script>
-<script src="sequencer.js?v=2.5"></script>
+<script src="scales.js?v=2.6.1"></script>
+<script src="screen.js?v=2.6.1"></script>
+<script src="sequencer.js?v=2.6.1"></script>
+<script src="help.js?v=2.6.1"></script>
+<div id="helpPop" class="helppop" hidden role="dialog"></div>
 </body>
 </html>

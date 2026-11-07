@@ -4,43 +4,57 @@
 const SEQ_T = {
   fr: {
     seqTitle: "Séquenceur",
-    seqHelp: "4 pistes de 32 pas, en pas à pas ou en rythme euclidien. Chaque piste joue des notes MIDI dans une gamme, et un jack peut suivre ses notes (mode « Piste »). Clique un pas pour le régler ; double-clic pour l'allumer ou l'éteindre.",
-    track: "Piste", tMode: "Mode", tModes: ["Éteinte", "Pas à pas", "Euclidien"],
-    tLength: "Longueur", tHits: "Coups", tRot: "Rotation", tDiv: "Durée d'un pas", tDivs: ["1/16", "1/8", "1/16 triolet", "1/4", "1/32"],
-    tDir: "Sens", tDirs: ["Avant", "Arrière", "Aller-retour", "Hasard"],
-    tMidi: "Jouer en MIDI", tChannel: "Canal", tAll: "ALL (16 canaux)", tScale: "Gamme", tRoot: "Tonique", tTranspose: "Transposition",
-    tProb: "Probabilité de la piste", tRandNote: "Notes aléatoires", tRandRange: "Étendue de l'aléatoire", tHumanize: "Humanisation (vélocité)", tAccent: "Accent (1er coup)",
+    seqHelp: "4 pistes qui jouent tes synthés en MIDI (et les jacks en mode « Piste »). Choisis une piste, allume ses pas d'un clic, puis dessine les notes et les variations à la souris.",
+    track: "Piste", tModes: ["Éteinte", "Pas à pas", "Euclidien"],
+    midiPill: "MIDI · canal {c}", midiPillAll: "MIDI · ALL", midiPillOff: "MIDI coupé",
+    midiOffHelp: "Cette piste ne joue pas en MIDI : clique « MIDI coupé » pour l'activer.",
+    tLength: "Pas", tHits: "Coups", tRot: "Rotation", tChannel: "Canal", tAll: "ALL", tScale: "Gamme", tRoot: "Tonique",
+    tDiv: "Durée d'un pas", tDivs: ["1/16", "1/8", "1/16 triolet", "1/4", "1/32"],
+    tDir: "Sens de lecture", tDirs: ["Avant", "Arrière", "Aller-retour", "Hasard"],
+    tTranspose: "Transposition", tProb: "Probabilité de la piste", tRandNote: "Notes aléatoires",
+    tRandRange: "Étendue de l'aléatoire", tHumanize: "Humanisation (vélocité)", tAccent: "Accent (1er coup)",
+    more: "Plus de réglages de la piste",
+    ovHelp: "Les 4 pistes : clique une ligne pour la modifier, et sa pastille pour couper ou activer son MIDI.",
+    stepsHelp: "Clique un pas pour l'allumer ou l'éteindre.", stepsHelpEu: "En euclidien, les coups se règlent avec « Coups » et « Rotation ».",
+    lanes: { note: "Note", vel: "Vélocité", prob: "Probabilité", sub: "Sous-pas", len: "Longueur", ch: "Canal", rand: "Aléatoire" },
+    laneHelp: {
+      note: "Glisse vers le haut ou le bas sur un pas pour changer sa note : seules les notes de la gamme sont possibles. Tu peux balayer plusieurs pas d'un coup.",
+      vel: "Hauteur = force de la note.", prob: "Hauteur = chance que le pas joue (100 % en haut).",
+      sub: "1 à 4 notes rapides dans le pas (roulements).", len: "Durée de la note : 25, 50, 75 ou 95 % du pas.",
+      ch: "Canal MIDI du pas : P = celui de la piste, 1 à 16, A = ALL.", rand: "Clique pour qu'un pas joue une note au hasard dans la gamme."
+    },
+    octDown: "▼ octave", octUp: "▲ octave",
+    sFill: "Tout allumer", sClear: "Tout éteindre", sCopyHalf: "Copier la 1re moitié sur la 2e",
     custom: "Gamme CUSTOM : clique les notes à garder",
-    gOut: "Sortie", gRhythm: "Rythme", gNotes: "Notes", gVary: "Variations",
-    midiOff: "Cette piste ne joue pas en MIDI : coche « Jouer en MIDI » et choisis le canal de ton synthé.",
-    midiOn: "Joue sur le canal {c}.", midiAll: "Joue sur les 16 canaux.",
-    noteHelp: "Seules les notes de la gamme sont proposées (tonique et transposition comprises).",
-    down: "− note", up: "+ note",
-    step: "Pas", sOn: "Actif", sNote: "Note", sVel: "Vélocité", sChannel: "Canal", sTrackCh: "celui de la piste",
-    sProb: "Probabilité", sSub: "Sous-pas", sLen: "Longueur de note", sRand: "Note aléatoire",
-    sClear: "Effacer la piste", sFill: "Tout allumer", sCopy: "Copier ce pas partout",
-    semis: "demi-tons", micro: "microtonale (pitch bend)",
+    micro: "Gamme microtonale : la boîte envoie un pitch bend (règle ton synthé sur ±2 demi-tons).",
     seqOld: "Le séquenceur demande le firmware 2.5 : mets ta boîte à jour plus bas.",
     loading: "Lecture de la séquence…",
   },
   en: {
     seqTitle: "Sequencer",
-    seqHelp: "4 tracks of 32 steps, step by step or Euclidean. Each track plays MIDI notes in a scale, and a jack can follow its notes (mode “Track”). Click a step to edit it; double-click to turn it on or off.",
-    track: "Track", tMode: "Mode", tModes: ["Off", "Steps", "Euclidean"],
-    tLength: "Length", tHits: "Hits", tRot: "Rotation", tDiv: "Step length", tDivs: ["1/16", "1/8", "1/16 triplet", "1/4", "1/32"],
+    seqHelp: "4 tracks that play your synths over MIDI (and the jacks in “Track” mode). Pick a track, turn its steps on with a click, then draw the notes and variations with the mouse.",
+    track: "Track", tModes: ["Off", "Steps", "Euclidean"],
+    midiPill: "MIDI · channel {c}", midiPillAll: "MIDI · ALL", midiPillOff: "MIDI muted",
+    midiOffHelp: "This track does not play MIDI: click “MIDI muted” to turn it on.",
+    tLength: "Steps", tHits: "Hits", tRot: "Rotation", tChannel: "Channel", tAll: "ALL", tScale: "Scale", tRoot: "Root",
+    tDiv: "Step length", tDivs: ["1/16", "1/8", "1/16 triplet", "1/4", "1/32"],
     tDir: "Direction", tDirs: ["Forward", "Backward", "Ping-pong", "Random"],
-    tMidi: "Play MIDI", tChannel: "Channel", tAll: "ALL (16 channels)", tScale: "Scale", tRoot: "Root", tTranspose: "Transpose",
-    tProb: "Track probability", tRandNote: "Random notes", tRandRange: "Random range", tHumanize: "Humanize (velocity)", tAccent: "Accent (first hit)",
+    tTranspose: "Transpose", tProb: "Track probability", tRandNote: "Random notes",
+    tRandRange: "Random range", tHumanize: "Humanize (velocity)", tAccent: "Accent (first hit)",
+    more: "More track settings",
+    ovHelp: "The 4 tracks: click a row to edit it, and its pill to mute or unmute its MIDI.",
+    stepsHelp: "Click a step to turn it on or off.", stepsHelpEu: "In Euclidean mode, hits are set with “Hits” and “Rotation”.",
+    lanes: { note: "Note", vel: "Velocity", prob: "Probability", sub: "Substeps", len: "Length", ch: "Channel", rand: "Random" },
+    laneHelp: {
+      note: "Drag up or down on a step to change its note: only the notes of the scale are possible. Sweep across several steps at once.",
+      vel: "Height = how hard the note plays.", prob: "Height = chance that the step plays (100 % at the top).",
+      sub: "1 to 4 fast notes within the step (rolls).", len: "Note length: 25, 50, 75 or 95 % of the step.",
+      ch: "MIDI channel of the step: P = the track's, 1 to 16, A = ALL.", rand: "Click so that a step plays a random note of the scale."
+    },
+    octDown: "▼ octave", octUp: "▲ octave",
+    sFill: "All on", sClear: "All off", sCopyHalf: "Copy the 1st half onto the 2nd",
     custom: "CUSTOM scale: click the notes to keep",
-    gOut: "Output", gRhythm: "Rhythm", gNotes: "Notes", gVary: "Variations",
-    midiOff: "This track does not play MIDI: tick “Play MIDI” and pick your synth's channel.",
-    midiOn: "Plays on channel {c}.", midiAll: "Plays on all 16 channels.",
-    noteHelp: "Only the notes of the scale are offered (root and transpose included).",
-    down: "− note", up: "+ note",
-    step: "Step", sOn: "On", sNote: "Note", sVel: "Velocity", sChannel: "Channel", sTrackCh: "the track's",
-    sProb: "Probability", sSub: "Substeps", sLen: "Note length", sRand: "Random note",
-    sClear: "Clear the track", sFill: "Turn all on", sCopy: "Copy this step everywhere",
-    semis: "semitones", micro: "microtonal (pitch bend)",
+    micro: "Microtonal scale: the box sends a pitch bend (set your synth to ±2 semitones).",
     seqOld: "The sequencer needs firmware 2.5: update your box below.",
     loading: "Reading the sequence…",
   }
@@ -177,32 +191,11 @@ async function seqSendAll() {   // after an import: everything, paced
   }
 }
 
-// ---------------------------------------------------------------- editing --
-function editTrack(fn) {
-  const k = SEQ.tracks[SEQ.sel];
-  fn(k);
-  k.length = Math.max(1, Math.min(32, k.length));
-  k.hits = Math.min(k.hits, k.length);
-  k.rotation = Math.min(k.rotation, k.length - 1);
-  seqSendTrack(SEQ.sel);
-  seqRender();
-}
-function editStep(s, fn) {
-  const o = stepObj(SEQ.steps[SEQ.sel][s]);
-  fn(o);
-  o.note = Math.max(0, Math.min(127, o.note)); o.vel = Math.max(1, Math.min(127, o.vel));
-  SEQ.steps[SEQ.sel][s] = stepBytes(o);
-  seqSendStep(SEQ.sel, s);
-  seqRender();
-}
-
 // -------------------------------------------------------------- rendering --
-const fld = (label, html) => `<label class="fld"><span>${esc(label)}</span>${html}</label>`;
-const sel = (k, opts, v) => `<select data-tk="${k}">${opts.map((o, i) => {
-  const [val, label] = Array.isArray(o) ? o : [i, o];
-  return `<option value="${val}" ${val === v ? "selected" : ""}>${esc(label)}</option>`;
-}).join("")}</select>`;
-const rng = (k, min, max, v, suffix = "") => `<input type="range" min="${min}" max="${max}" value="${v}" data-tk="${k}"><output>${v}${suffix}</output>`;
+const LANES = ["note", "vel", "prob", "sub", "len", "ch", "rand"];
+const LANE_LEVELS = { vel: 127, prob: 8, sub: 4, len: 4, ch: 18, rand: 2 };
+if (!SEQ.lane) SEQ.lane = "note";
+if (!SEQ.win) SEQ.win = [null, null, null, null];
 
 function scaleOptions(v) {
   let html = "", fam = -1;
@@ -213,6 +206,23 @@ function scaleOptions(v) {
   }
   return html + "</optgroup>";
 }
+const selHtml = (attr, opts, v) => `<select ${attr}>${opts.map((o, i) => {
+  const [val, label] = Array.isArray(o) ? o : [i, o];
+  return `<option value="${val}" ${val === v ? "selected" : ""}>${esc(label)}</option>`;
+}).join("")}</select>`;
+const stepper = (key, v) => `<span class="stp"><button data-inc="${key}:-1" aria-label="-">−</button><b>${v}</b><button data-inc="${key}:1" aria-label="+">+</button></span>`;
+const midiPill = k => !k.midi ? t("midiPillOff") : k.channel === 16 ? t("midiPillAll") : tf("midiPill", { c: k.channel + 1 });
+
+// The notes shown in the Note lane: two octaves of the scale, which the user can shift.
+function noteWindow(t) {
+  const k = SEQ.tracks[t], all = scaleChoices(k);
+  if (SEQ.win[t] == null) {
+    const used = SEQ.steps[t].slice(0, k.length).map(b => playedNote(k, b[0] & 0x7F).note).sort((a, b) => a - b);
+    SEQ.win[t] = Math.max(24, (used[Math.floor(used.length / 2)] || 60) - 12);
+  }
+  const lo = SEQ.win[t];
+  return all.filter(c => c.p.note >= lo && c.p.note < lo + 25);
+}
 
 let seqRenderTimer = null;
 function seqRenderSoon() { if (!seqRenderTimer) seqRenderTimer = setTimeout(() => { seqRenderTimer = null; seqRender(); }, 60); }
@@ -220,174 +230,249 @@ function seqRenderSoon() { if (!seqRenderTimer) seqRenderTimer = setTimeout(() =
 function seqRender() {
   const box = $("seq");
   if (!box) return;
-  const has = !!S && (S.fwNum >= 25) && !!SEQ.tracks;
+  const has = !!S && S.fwNum >= 25 && !!SEQ.tracks;
   if (!has) {
     box.innerHTML = `<p class="small">${esc(S && S.fwNum < 25 ? t("seqOld") : link && S ? t("loading") : "")}</p>`;
     return;
   }
-  if (box.contains(document.activeElement) && document.activeElement.matches("input[type=range], input[type=number]") && box.dataset.ready) {
-    seqRenderHeads();   // do not rebuild under the user's fingers
+  if (SEQ.dragging || (box.contains(document.activeElement) && document.activeElement.matches("input[type=range]"))) {
+    seqRenderHeads();
     return;
   }
-  const k = SEQ.tracks[SEQ.sel], o = stepObj(SEQ.steps[SEQ.sel][SEQ.step]);
-  const tabs = [0, 1, 2, 3].map(i => {
-    const tk = SEQ.tracks[i];
-    return `<button class="ttab ${i === SEQ.sel ? "on" : ""}" data-tab="${i}"><b>${esc(t("track"))} ${i + 1}</b><span>${esc(t("tModes")[tk.mode])}${tk.midi && tk.mode ? " · " + (tk.channel === 16 ? "ALL" : "ch " + (tk.channel + 1)) : ""}</span><i class="dot"></i></button>`;
+  const t0 = SEQ.sel, k = SEQ.tracks[t0];
+
+  const overview = [0, 1, 2, 3].map(ti => {
+    const tk = SEQ.tracks[ti];
+    const cells = Array.from({ length: 32 }, (_, s) => `<i class="${s >= tk.length ? "o" : hitOf(ti, s) ? "h" : ""}" data-ov="${s}"></i>`).join("");
+    return `<div class="ovrow ${ti === t0 ? "sel" : ""} ${tk.mode ? "" : "off"}" data-tab="${ti}">
+      <button class="ovname" data-tab="${ti}"><b>${esc(t("track"))} ${ti + 1}</b><span>${esc(t("tModes")[tk.mode])}</span><i class="dot"></i></button>
+      <button class="pill ${tk.midi ? "on" : ""}" data-midi="${ti}" ${tk.mode ? "" : "disabled"}>${esc(midiPill(tk))}</button>
+      <div class="ovsteps">${cells}</div></div>`;
   }).join("");
+
   const chOpts = [...Array.from({ length: 16 }, (_, i) => [i, String(i + 1)]), [16, t("tAll")]];
-  const microNote = isMicro(k.scale) ? `<p class="small">${esc(t("micro"))}</p>` : "";
-  const customRow = k.scale === SCALES.custom ? `<div class="custom"><span class="small">${esc(t("custom"))}</span>${ROOTS.map((r, i) =>
-    `<button data-cm="${i}" aria-pressed="${!!(SEQ.custom & (1 << i))}">${r}</button>`).join("")}</div>` : "";
-  const status = !k.mode ? "" : !k.midi ? `<p class="warn">${esc(t("midiOff"))}</p>`
-    : `<p class="ok">${esc(k.channel === 16 ? t("midiAll") : tf("midiOn", { c: k.channel + 1 }))}</p>`;
-  const form = `
-    <div class="tform">
-      <div class="grp2"><h4>${esc(t("gOut"))}</h4>
-        ${fld(t("tMode"), sel("mode", t("tModes"), k.mode))}
-        <label class="chk big"><input type="checkbox" data-tk="midi" ${k.midi ? "checked" : ""}> ${esc(t("tMidi"))}</label>
-        ${fld(t("tChannel"), sel("channel", chOpts, k.channel))}
-        ${status}
-      </div>
-      <div class="grp2"><h4>${esc(t("gRhythm"))}</h4>
-        ${fld(t("tLength"), rng("length", 1, 32, k.length))}
-        ${k.mode === 2 ? fld(t("tHits"), rng("hits", 0, k.length, k.hits)) + fld(t("tRot"), rng("rotation", 0, k.length - 1, k.rotation)) : ""}
-        ${fld(t("tDiv"), sel("division", t("tDivs"), k.division))}
-        ${fld(t("tDir"), sel("direction", t("tDirs"), k.direction))}
-      </div>
-      <div class="grp2"><h4>${esc(t("gNotes"))}</h4>
-        ${fld(t("tScale"), `<select data-tk="scale">${scaleOptions(k.scale)}</select>`)}
-        ${fld(t("tRoot"), sel("root", ROOTS, k.root))}
-        ${fld(t("tTranspose"), rng("transpose", 0, 48, k.transpose).replace(`>${k.transpose}<`, `>${k.transpose - 24 > 0 ? "+" : ""}${k.transpose - 24}<`))}
-      </div>
-      <div class="grp2"><h4>${esc(t("gVary"))}</h4>
-        ${fld(t("tProb"), rng("prob", 0, 100, k.prob, " %"))}
-        ${fld(t("tRandNote"), rng("randNote", 0, 100, k.randNote, " %"))}
-        ${fld(t("tRandRange"), rng("randRange", 0, 24, k.randRange))}
-        ${fld(t("tHumanize"), rng("humanize", 0, 40, k.humanize))}
-        ${fld(t("tAccent"), rng("accent", 0, 60, k.accent))}
-      </div>
-    </div>${microNote}${customRow}`;
+  const head = `
+    <div class="bar1">
+      <div class="seg3">${t("tModes").map((m, i) => `<button data-setmode="${i}" aria-pressed="${i === k.mode}">${esc(m)}</button>`).join("")}</div>${helpBtn("sMode")}
+      <label class="lab">${esc(t("tChannel"))}${helpBtn("sChannel")} ${selHtml('data-tk="channel"', chOpts, k.channel)}</label>
+      <label class="lab">${esc(t("tScale"))}${helpBtn("sScale")} <select data-tk="scale">${scaleOptions(k.scale)}</select></label>
+      <label class="lab">${esc(t("tRoot"))} ${selHtml('data-tk="root"', ROOTS, k.root)}</label>
+      <span class="lab">${esc(t("tLength"))}${helpBtn("sLength")} ${stepper("length", k.length)}</span>
+      ${k.mode === 2 ? `<span class="lab">${esc(t("tHits"))}${helpBtn("sHits")} ${stepper("hits", k.hits)}</span><span class="lab">${esc(t("tRot"))}${helpBtn("sRot")} ${stepper("rotation", k.rotation)}</span>` : ""}
+    </div>
+    ${k.mode && !k.midi ? `<p class="warn">${esc(t("midiOffHelp"))}</p>` : ""}
+    ${isMicro(k.scale) ? `<p class="small">${esc(t("micro"))}</p>` : ""}
+    ${k.scale === SCALES.custom ? `<div class="custom"><span class="small">${esc(t("custom"))}</span>${ROOTS.map((r, i) =>
+      `<button data-cm="${i}" aria-pressed="${!!(SEQ.custom & (1 << i))}">${r}</button>`).join("")}</div>` : ""}`;
+
   const cells = Array.from({ length: 32 }, (_, s) => {
-    const so = stepObj(SEQ.steps[SEQ.sel][s]), inLen = s < k.length, hit = inLen && hitOf(SEQ.sel, s);
-    return `<button class="cell ${hit ? "hit" : ""} ${inLen ? "" : "out"} ${s === SEQ.step ? "sel" : ""}" data-step="${s}"
-      style="--p:${PROB_LEVELS[so.prob] / 100}"><span class="n">${esc(playedLabel(playedNote(k, so.note)))}</span>
-      <span class="m">${so.sub > 1 ? "×" + so.sub : ""}${so.ch ? " c" + (so.ch > 16 ? "A" : so.ch) : ""}${so.rand ? " ?" : ""}</span></button>`;
+    const o = stepObj(SEQ.steps[t0][s]), inLen = s < k.length, hit = inLen && hitOf(t0, s);
+    return `<button class="cell ${hit ? "hit" : ""} ${inLen ? "" : "out"}" data-step="${s}"><span class="n">${esc(playedLabel(playedNote(k, o.note)))}</span>
+      <span class="m">${o.sub > 1 ? "×" + o.sub : ""}${o.ch ? " c" + (o.ch > 16 ? "A" : o.ch) : ""}${o.rand ? " ?" : ""}</span></button>`;
   }).join("");
-  const stepChOpts = [[0, t("sTrackCh")], ...Array.from({ length: 16 }, (_, i) => [i + 1, String(i + 1)]), [17, "ALL"]];
-  const insp = `
-    <div class="insp">
-      <b>${esc(t("step"))} ${SEQ.step + 1}</b>
-      ${k.mode === 1 ? `<label class="chk"><input type="checkbox" data-sk="on" ${o.on ? "checked" : ""}> ${esc(t("sOn"))}</label>` : ""}
-      ${fld(t("sNote"), noteSelect(k, o.note))}
-      <div class="nbtns"><button data-nudge="-1">${esc(t("down"))}</button><button data-nudge="1">${esc(t("up"))}</button><span class="small">${esc(t("noteHelp"))}</span></div>
-      ${fld(t("sVel"), `<input type="range" min="1" max="127" value="${o.vel}" data-sk="vel"><output>${o.vel}</output>`)}
-      ${fld(t("sChannel"), `<select data-sk="ch">${stepChOpts.map(([v, l]) => `<option value="${v}" ${v === o.ch ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`)}
-      ${fld(t("sProb"), `<select data-sk="prob">${PROB_LEVELS.map((p, i) => `<option value="${i}" ${i === o.prob ? "selected" : ""}>${p} %</option>`).join("")}</select>`)}
-      ${fld(t("sSub"), `<select data-sk="sub">${[1, 2, 3, 4].map(n => `<option value="${n}" ${n === o.sub ? "selected" : ""}>${n}</option>`).join("")}</select>`)}
-      ${fld(t("sLen"), `<select data-sk="len">${LEN_PCT.map((p, i) => `<option value="${i}" ${i === o.len ? "selected" : ""}>${p} %</option>`).join("")}</select>`)}
-      <label class="chk"><input type="checkbox" data-sk="rand" ${o.rand ? "checked" : ""}> ${esc(t("sRand"))}</label>
-      <div class="sbtns">
-        <button data-act="copy">${esc(t("sCopy"))}</button>
-        ${k.mode === 1 ? `<button data-act="fill">${esc(t("sFill"))}</button><button data-act="clear">${esc(t("sClear"))}</button>` : ""}
+
+  const lane = SEQ.lane;
+  const laneTabs = LANES.map(l => `<button data-lane="${l}" aria-pressed="${l === lane}">${esc(t("lanes")[l])}</button>`).join("");
+  const more = `
+    <details class="more" ${SEQ.moreOpen ? "open" : ""}><summary>${esc(t("more"))}</summary>
+      <div class="tform">
+        ${fldR(t("tDiv"), selHtml('data-tk="division"', t("tDivs"), k.division), "sDiv")}
+        ${fldR(t("tDir"), selHtml('data-tk="direction"', t("tDirs"), k.direction), "sDir")}
+        ${fldR(t("tTranspose"), rngHtml("transpose", 0, 48, k.transpose, v => (v > 24 ? "+" : "") + (v - 24)), "sTranspose")}
+        ${fldR(t("tProb"), rngHtml("prob", 0, 100, k.prob, v => v + " %"), "sTProb")}
+        ${fldR(t("tRandNote"), rngHtml("randNote", 0, 100, k.randNote, v => v + " %"), "sRandNote")}
+        ${fldR(t("tRandRange"), rngHtml("randRange", 0, 24, k.randRange, v => v), "sRandRange")}
+        ${fldR(t("tHumanize"), rngHtml("humanize", 0, 40, k.humanize, v => v), "sHumanize")}
+        ${fldR(t("tAccent"), rngHtml("accent", 0, 60, k.accent, v => v), "sAccent")}
       </div>
+    </details>`;
+
+  box.innerHTML = `
+    <div class="ovhead small">${esc(t("ovHelp"))}${helpBtn("sMidi")}</div>
+    <div class="ov">${overview}</div>
+    <div class="ed ${k.mode ? "" : "muted"}">
+      ${head}
+      <div class="steps32">${cells}</div>
+      <p class="small">${esc(k.mode === 2 ? t("stepsHelpEu") : t("stepsHelp"))}</p>
+      <div class="lanetabs">${laneTabs}</div>
+      <div class="lane" data-lanebox="${lane}">${laneBars()}</div>
+      <div class="lanefoot"><span class="small">${esc(t("laneHelp")[lane])}</span>
+        ${lane === "note" ? `<button data-oct="-1">${esc(t("octDown"))}</button><button data-oct="1">${esc(t("octUp"))}</button>` : ""}
+      </div>
+      <div class="tools">
+        ${k.mode === 1 ? `<button data-act="fill">${esc(t("sFill"))}</button><button data-act="clear">${esc(t("sClear"))}</button>` : ""}
+        <button data-act="half">${esc(t("sCopyHalf"))}</button>
+      </div>
+      ${more}
     </div>`;
-  box.innerHTML = `<div class="ttabs">${tabs}</div>${form}<div class="grid">${cells}</div>${insp}`;
-  box.dataset.ready = "1";
   seqRenderHeads();
+}
+const fldR = (label, html, help) => `<label class="fld"><span>${esc(label)}${help ? helpBtn(help) : ""}</span>${html}</label>`;
+const rngHtml = (k, min, max, v, fmt) => `<input type="range" min="${min}" max="${max}" value="${v}" data-tk="${k}" data-fmt="${k}"><output>${esc(fmt(v))}</output>`;
+const FMT = { transpose: v => (v > 24 ? "+" : "") + (v - 24), prob: v => v + " %", randNote: v => v + " %" };
+
+// Bars of the current lane: value in 0..1 and a label, for each of the 32 steps.
+function laneValue(t, s) {
+  const k = SEQ.tracks[t], o = stepObj(SEQ.steps[t][s]);
+  switch (SEQ.lane) {
+    case "note": {
+      const win = noteWindow(t), p = playedNote(k, o.note), key = p.note * 1000 + p.cents;
+      let i = win.findIndex(c => c.p.note * 1000 + c.p.cents === key);
+      const above = i < 0 && win.length && p.note > win[win.length - 1].p.note;
+      if (i < 0) i = above ? win.length - 1 : 0;
+      return { v: win.length > 1 ? (i + 1) / win.length : 1, label: playedLabel(p), out: i < 0 || win[i].p.note !== p.note ? (above ? "▲" : "▼") : "" };
+    }
+    case "vel": return { v: o.vel / 127, label: o.vel };
+    case "prob": return { v: PROB_LEVELS[o.prob] / 100, label: PROB_LEVELS[o.prob] + "%" };
+    case "sub": return { v: o.sub / 4, label: "×" + o.sub };
+    case "len": return { v: LEN_PCT[o.len] / 100, label: LEN_PCT[o.len] + "%" };
+    case "ch": return { v: (o.ch + 1) / 18, label: o.ch === 0 ? "P" : o.ch > 16 ? "A" : o.ch };
+    case "rand": return { v: o.rand ? 1 : 0.06, label: o.rand ? "?" : "" };
+  }
+}
+function laneBars() {
+  const t0 = SEQ.sel, L = SEQ.tracks[t0].length;
+  return Array.from({ length: 32 }, (_, s) => {
+    const lv = laneValue(t0, s);
+    return `<div class="lb ${s >= L ? "o" : ""} ${hitOf(t0, s) ? "h" : ""}" data-lb="${s}"><i style="height:${Math.round(lv.v * 100)}%"></i><span>${esc(String(lv.label))}${lv.out || ""}</span></div>`;
+  }).join("");
+}
+function refreshLane() {
+  const lane = $("seq").querySelector(".lane");
+  if (!lane) return;
+  const k = SEQ.tracks[SEQ.sel];
+  lane.querySelectorAll("[data-lb]").forEach(el => {
+    const s = +el.dataset.lb, lv = laneValue(SEQ.sel, s);
+    el.querySelector("i").style.height = Math.round(lv.v * 100) + "%";
+    el.querySelector("span").textContent = String(lv.label) + (lv.out || "");
+  });
+  $("seq").querySelectorAll(".steps32 .cell").forEach(c => {
+    const o = stepObj(SEQ.steps[SEQ.sel][+c.dataset.step]);
+    c.querySelector(".n").textContent = playedLabel(playedNote(k, o.note));
+    c.querySelector(".m").textContent = `${o.sub > 1 ? "×" + o.sub : ""}${o.ch ? " c" + (o.ch > 16 ? "A" : o.ch) : ""}${o.rand ? " ?" : ""}`;
+  });
+}
+
+// Set a step from a lane position (y = 0 at the bottom, 1 at the top).
+function laneSet(s, y) {
+  const t0 = SEQ.sel, k = SEQ.tracks[t0], o = stepObj(SEQ.steps[t0][s]);
+  y = Math.max(0, Math.min(1, y));
+  switch (SEQ.lane) {
+    case "note": { const win = noteWindow(t0); if (!win.length) return; o.note = win[Math.min(win.length - 1, Math.floor(y * win.length))].raw; break; }
+    case "vel": o.vel = Math.max(1, Math.round(y * 127)); break;
+    case "prob": { const pct = y * 100; let best = 0; PROB_LEVELS.forEach((p, i) => { if (Math.abs(p - pct) < Math.abs(PROB_LEVELS[best] - pct)) best = i; }); o.prob = best; break; }
+    case "sub": o.sub = Math.min(4, Math.max(1, Math.ceil(y * 4))); break;
+    case "len": o.len = Math.min(3, Math.floor(y * 4)); break;
+    case "ch": o.ch = Math.min(17, Math.floor(y * 18)); break;
+    case "rand": o.rand = y > 0.5; break;
+  }
+  SEQ.steps[t0][s] = stepBytes(o);
+  seqSendStep(t0, s);
 }
 
 function seqRenderHeads() {
   const box = $("seq");
   if (!box || !SEQ.tracks) return;
   const now = performance.now();
-  box.querySelectorAll(".cell").forEach(c => c.classList.toggle("head", +c.dataset.step === SEQ.heads[SEQ.sel]));
-  box.querySelectorAll(".ttab").forEach(b => b.querySelector(".dot").classList.toggle("lit", now - SEQ.playedAt[+b.dataset.tab] < 120));
+  box.querySelectorAll(".ovrow").forEach(row => {
+    const ti = +row.dataset.tab, h = SEQ.heads[ti];
+    row.querySelectorAll("[data-ov]").forEach(c => c.classList.toggle("p", +c.dataset.ov === h));
+    row.querySelector(".dot").classList.toggle("lit", now - SEQ.playedAt[ti] < 120);
+  });
+  const h = SEQ.heads[SEQ.sel];
+  box.querySelectorAll(".steps32 .cell").forEach(c => c.classList.toggle("head", +c.dataset.step === h));
+  box.querySelectorAll(".lane [data-lb]").forEach(c => c.classList.toggle("head", +c.dataset.lb === h));
 }
 
-function noteSelect(k, raw) {
-  const cur = playedNote(k, raw), key = cur.note * 1000 + cur.cents;
-  return `<select data-sk="note">${scaleChoices(k).map(c =>
-    `<option value="${c.raw}" ${c.p.note * 1000 + c.p.cents === key ? "selected" : ""}>${esc(playedLabel(c.p))}</option>`).join("")}</select>`;
-}
-
-// --------------------------------------------------------------- handlers --
-function seqBind() {
-  const box = $("seq");
-  box.addEventListener("click", e => {
-    const tab = e.target.closest("[data-tab]");
-    if (tab) { SEQ.sel = +tab.dataset.tab; SEQ.step = 0; box.dataset.ready = ""; seqRender(); return; }
-    const cell = e.target.closest("[data-step]");
-    if (cell) { SEQ.step = +cell.dataset.step; box.dataset.ready = ""; seqRender(); return; }
-    const cm = e.target.closest("[data-cm]");
-    if (cm) { SEQ.custom ^= 1 << +cm.dataset.cm; if (!SEQ.custom) SEQ.custom = 1; send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); seqRender(); return; }
-    const nudge = e.target.closest("[data-nudge]");
-    if (nudge) {
-      const k = SEQ.tracks[SEQ.sel], list = scaleChoices(k), o = stepObj(SEQ.steps[SEQ.sel][SEQ.step]);
-      const cur = playedNote(k, o.note), key = cur.note * 1000 + cur.cents;
-      let i = list.findIndex(c => c.p.note * 1000 + c.p.cents === key);
-      i = Math.max(0, Math.min(list.length - 1, (i < 0 ? 0 : i) + +nudge.dataset.nudge));
-      editStepQuiet(SEQ.step, s => { s.note = list[i].raw; }, true);
-      return;
-    }
-    const act = e.target.closest("[data-act]");
-    if (!act) return;
-    const t = SEQ.sel, src = SEQ.steps[t][SEQ.step].slice();
-    for (let s = 0; s < 32; s++) {
-      const o = stepObj(SEQ.steps[t][s]);
-      if (act.dataset.act === "copy") { const keep = o.on; SEQ.steps[t][s] = src.slice(); if (SEQ.tracks[t].mode === 1) SEQ.steps[t][s][0] = (keep ? 0x80 : 0) | (src[0] & 0x7F); }
-      else { o.on = act.dataset.act === "fill"; SEQ.steps[t][s] = stepBytes(o); }
-      seqSendStep(t, s);
-    }
-    seqRender();
-  });
-  box.addEventListener("dblclick", e => {
-    const cell = e.target.closest("[data-step]");
-    if (cell && SEQ.tracks[SEQ.sel].mode === 1) editStep(+cell.dataset.step, o => { o.on = !o.on; });
-  });
-  const onInput = e => {
-    const el = e.target;
-    const v = el.type === "checkbox" ? (el.checked ? 1 : 0) : Math.round(+el.value);
-    if (el.dataset.tk) {
-      if (el.type === "range" && el.nextElementSibling) el.nextElementSibling.textContent = el.dataset.tk === "transpose" ? (v - 24 > 0 ? "+" : "") + (v - 24) : v + (/prob|rand/i.test(el.dataset.tk) && el.dataset.tk !== "randRange" ? " %" : "");
-      const structural = ["mode", "length", "scale", "root", "midi", "channel"].includes(el.dataset.tk) || e.type === "change";
-      editTrackQuiet(el.dataset.tk, v, structural);
-    } else if (el.dataset.sk) {
-      if (el.type === "range" && el.nextElementSibling) el.nextElementSibling.textContent = v;
-      const k = el.dataset.sk;
-      editStepQuiet(SEQ.step, o => { o[k] = k === "on" || k === "rand" ? !!v : v; }, e.type === "change");
-    }
-  };
-  box.addEventListener("input", onInput);
-  box.addEventListener("change", e => { if (e.target.type !== "range") onInput(e); else seqRender(); });
-}
-function editTrackQuiet(key, v, rerender) {
+// ---------------------------------------------------------------- editing --
+function setTrack(key, v, rerender = true) {
   const k = SEQ.tracks[SEQ.sel];
   k[key] = v;
   k.length = Math.max(1, Math.min(32, k.length));
-  k.hits = Math.min(k.hits, k.length);
-  k.rotation = Math.min(k.rotation, k.length - 1);
+  k.hits = Math.max(0, Math.min(k.hits, k.length));
+  k.rotation = Math.max(0, Math.min(k.rotation, k.length - 1));
+  if (key === "scale" || key === "root" || key === "transpose") SEQ.win[SEQ.sel] = null;
   seqSendTrack(SEQ.sel);
-  if (rerender) { $("seq").dataset.ready = ""; seqRender(); }
-  else updateCells();
+  if (rerender) seqRender();
 }
-function editStepQuiet(s, fn, rerender) {
-  const o = stepObj(SEQ.steps[SEQ.sel][s]);
-  fn(o);
-  o.note = Math.max(0, Math.min(127, o.note || 0)); o.vel = Math.max(1, Math.min(127, o.vel || 1));
-  SEQ.steps[SEQ.sel][s] = stepBytes(o);
-  seqSendStep(SEQ.sel, s);
-  if (rerender) { $("seq").dataset.ready = ""; seqRender(); } else updateCells();
-}
-function updateCells() {
-  const k = SEQ.tracks[SEQ.sel];
-  $("seq").querySelectorAll(".cell").forEach(c => {
-    const s = +c.dataset.step, so = stepObj(SEQ.steps[SEQ.sel][s]), inLen = s < k.length;
-    c.classList.toggle("hit", inLen && hitOf(SEQ.sel, s));
-    c.classList.toggle("out", !inLen);
-    c.querySelector(".n").textContent = playedLabel(playedNote(k, so.note));
-    c.style.setProperty("--p", PROB_LEVELS[so.prob] / 100);
-  });
 
+function seqBind() {
+  const box = $("seq");
+  box.addEventListener("click", e => {
+    const el = e.target.closest("button");
+    if (!el) {   // a click anywhere on a track row selects it
+      const row = e.target.closest(".ovrow");
+      if (row) { SEQ.sel = +row.dataset.tab; seqRender(); }
+      return;
+    }
+    if (el.disabled) return;
+    const d = el.dataset;
+    if (d.midi != null) { SEQ.sel = +d.midi; setTrack("midi", SEQ.tracks[SEQ.sel].midi ? 0 : 1); return; }
+    if (d.tab != null) { SEQ.sel = +d.tab; seqRender(); return; }
+    if (d.setmode != null) { setTrack("mode", +d.setmode); return; }
+    if (d.inc) { const [key, n] = d.inc.split(":"); setTrack(key, SEQ.tracks[SEQ.sel][key] + +n); return; }
+    if (d.lane) { SEQ.lane = d.lane; seqRender(); return; }
+    if (d.oct) { SEQ.win[SEQ.sel] = Math.max(0, Math.min(96, (SEQ.win[SEQ.sel] || 48) + 12 * +d.oct)); refreshLane(); return; }
+    if (d.cm != null) { SEQ.custom ^= 1 << +d.cm; if (!SEQ.custom) SEQ.custom = 1; send(enc(0x1B, SEQ.custom & 0x7F, SEQ.custom >> 7)); seqRender(); return; }
+    if (d.step != null) {
+      const k = SEQ.tracks[SEQ.sel], s = +d.step;
+      if (k.mode !== 1 || s >= k.length) return;
+      const o = stepObj(SEQ.steps[SEQ.sel][s]); o.on = !o.on;
+      SEQ.steps[SEQ.sel][s] = stepBytes(o); seqSendStep(SEQ.sel, s); seqRender();
+      return;
+    }
+    if (d.act) {
+      const t0 = SEQ.sel;
+      for (let s = 0; s < 32; s++) {
+        if (d.act === "half") { if (s >= 16) SEQ.steps[t0][s] = SEQ.steps[t0][s - 16].slice(); else continue; }
+        else { const o = stepObj(SEQ.steps[t0][s]); o.on = d.act === "fill"; SEQ.steps[t0][s] = stepBytes(o); }
+        seqSendStep(t0, s);
+      }
+      seqRender();
+    }
+  });
+  box.addEventListener("change", e => {
+    const el = e.target;
+    if (el.dataset.tk && el.tagName === "SELECT") setTrack(el.dataset.tk, +el.value);
+    if (el.dataset.tk && el.type === "range") seqRender();
+  });
+  box.addEventListener("input", e => {
+    const el = e.target;
+    if (el.dataset.tk && el.type === "range") {
+      const v = +el.value, f = FMT[el.dataset.tk] || (x => x);
+      el.nextElementSibling.textContent = f(v);
+      setTrack(el.dataset.tk, v, false);
+    }
+  });
+  box.addEventListener("toggle", e => { if (e.target.matches("details.more")) SEQ.moreOpen = e.target.open; }, true);
+
+  // drawing on the lanes
+  const paint = e => {
+    const lane = box.querySelector(".lane");
+    const r = lane.getBoundingClientRect();
+    const s = Math.max(0, Math.min(31, Math.floor((e.clientX - r.left) / r.width * 32)));
+    const y = 1 - (e.clientY - r.top) / r.height;
+    if (SEQ.lane === "rand") { if (SEQ.lastPainted === s) return; laneSet(s, SEQ.randValue); }
+    else laneSet(s, y);
+    SEQ.lastPainted = s;
+    refreshLane();
+  };
+  box.addEventListener("pointerdown", e => {
+    const lane = e.target.closest(".lane");
+    if (!lane) return;
+    e.preventDefault();
+    SEQ.dragging = true; SEQ.lastPainted = -1;
+    if (SEQ.lane === "rand") {
+      const r = lane.getBoundingClientRect(), s = Math.max(0, Math.min(31, Math.floor((e.clientX - r.left) / r.width * 32)));
+      SEQ.randValue = stepObj(SEQ.steps[SEQ.sel][s]).rand ? 0 : 1;
+    }
+    lane.setPointerCapture(e.pointerId);
+    paint(e);
+  });
+  box.addEventListener("pointermove", e => { if (SEQ.dragging) paint(e); });
+  const end = () => { if (SEQ.dragging) { SEQ.dragging = false; seqRender(); } };
+  box.addEventListener("pointerup", end);
+  box.addEventListener("pointercancel", end);
 }
 
 // ------------------------------------------------------------------- demo --

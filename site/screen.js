@@ -753,14 +753,14 @@ function renderPanel() {
     return `<div class="jackrow">
       <div class="head">
         <span class="name">Jack ${j + 1}<small>${S ? esc(t("places")[S.pos[j]]) : ""}</small></span>
-        <label>${esc(t("place"))} <select data-pos="${j}" ${live ? "" : "disabled"}>${places}</select></label>
-        <button data-ident="${j}" class="${identOn ? "ident-on" : ""}" ${canIdent || identOn ? "" : "disabled"} title="${canIdent ? "" : esc(t("identDisabled"))}">${esc(identOn ? t("identStop") : t("identBtn"))}</button>
+        <label>${esc(t("place"))}${helpBtn("jPlace")} <select data-pos="${j}" ${live ? "" : "disabled"}>${places}</select></label>
+        <button data-ident="${j}" class="${identOn ? "ident-on" : ""}" ${canIdent || identOn ? "" : "disabled"} title="${canIdent ? "" : esc(t("identDisabled"))}">${esc(identOn ? t("identStop") : t("identBtn"))}</button>${helpBtn("jIdent")}
       </div>${groups}
-      ${field(t("prob"), `<input type="range" min="0" max="100" step="5" data-jp="${j}" ${live && S.fwNum >= 23 ? "" : "disabled"}><output></output>`)}
+      ${field(t("prob"), `<input type="range" min="0" max="100" step="5" data-jp="${j}" ${live && S.fwNum >= 23 ? "" : "disabled"}><output></output>`, "jProb")}
       <div class="jx">
-        ${field(t("pulse"), `<select data-jt="${j}" ${v24 && mode !== 6 && mode !== 7 ? "" : "disabled"}>${t("pulseOpts").map((o, i) => `<option value="${i}">${esc(o)}</option>`).join("")}</select>`)}
-        ${field(t("offset"), `<select data-jo="${j}" ${v24 && (mode <= 5 || (mode >= 8 && mode <= 10) || mode === 14) ? "" : "disabled"}>${Array.from({ length: 16 }, (_, i) => `<option value="${i}">${esc(offsetLabel(i))}</option>`).join("")}</select>`)}
-        ${mode === 14 ? field(t("divN"), `<input type="number" min="1" max="64" data-jn="${j}" ${v24 ? "" : "disabled"}>`) : ""}
+        ${field(t("pulse"), `<select data-jt="${j}" ${v24 && mode !== 6 && mode !== 7 ? "" : "disabled"}>${t("pulseOpts").map((o, i) => `<option value="${i}">${esc(o)}</option>`).join("")}</select>`, "jPulse")}
+        ${field(t("offset"), `<select data-jo="${j}" ${v24 && (mode <= 5 || (mode >= 8 && mode <= 10) || mode === 14) ? "" : "disabled"}>${Array.from({ length: 16 }, (_, i) => `<option value="${i}">${esc(offsetLabel(i))}</option>`).join("")}</select>`, "jOffset")}
+        ${mode === 14 ? field(t("divN"), `<input type="number" min="1" max="64" data-jn="${j}" ${v24 ? "" : "disabled"}>`, "jDivN") : ""}
       </div></div>`;
   }).join("");
   syncJackProb();
@@ -768,16 +768,16 @@ function renderPanel() {
 
 // ---- settings cards (built once, values synced so that editing is never interrupted)
 let built = false;
-function field(label, input) { return `<label class="fld"><span>${esc(label)}</span>${input}</label>`; }
+function field(label, input, help) { return `<label class="fld"><span>${esc(label)}${help ? helpBtn(help) : ""}</span>${input}</label>`; }
 function buildSettings() {
   built = true;
   const chOpts = Array.from({ length: 16 }, (_, i) => `<option value="${i}">${i + 1}</option>`).join("");
   $("midiFields").innerHTML = `
-    ${field(t("timeSig"), `<select data-c="timeSig">${TIME_SIGS.map((s, i) => `<option value="${i}">${s}</option>`).join("")}</select>`)}
-    <label class="chk"><input type="checkbox" data-c="songPosition"> ${esc(t("spp"))}</label>
-    <label class="chk"><input type="checkbox" data-c="clockWhenStopped"> ${esc(t("clockStopped"))}</label>
-    <label class="chk"><input type="checkbox" data-c="buttonPauses"> ${esc(t("buttonPauses"))}</label>
-    ${field(t("metro"), `<select data-c="metroMode">${t("metroModes").map((s, i) => `<option value="${i}">${esc(s)}</option>`).join("")}</select>`)}
+    ${field(t("timeSig"), `<select data-c="timeSig">${TIME_SIGS.map((s, i) => `<option value="${i}">${s}</option>`).join("")}</select>`, "mTimeSig")}
+    <label class="chk"><input type="checkbox" data-c="songPosition"> ${esc(t("spp"))}${helpBtn("mSpp")}</label>
+    <label class="chk"><input type="checkbox" data-c="clockWhenStopped"> ${esc(t("clockStopped"))}${helpBtn("mClock")}</label>
+    <label class="chk"><input type="checkbox" data-c="buttonPauses"> ${esc(t("buttonPauses"))}${helpBtn("mPause")}</label>
+    ${field(t("metro"), `<select data-c="metroMode">${t("metroModes").map((s, i) => `<option value="${i}">${esc(s)}</option>`).join("")}</select>`, "mMetro")}
     <div class="midi-row">
       ${field(t("metroCh"), `<select data-c="metroChannel">${chOpts}</select>`)}
       ${field(t("metroDown"), `<input type="number" min="0" max="127" data-c="metroNoteDown"><output class="nn"></output>`)}

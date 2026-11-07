@@ -137,7 +137,7 @@ La boîte contient un **séquenceur de 4 pistes**. Chaque piste joue des **notes
 
 ### Faire jouer une piste sur un synthé
 1. Branche la prise MIDI de la boîte sur l'entrée MIDI du synthé.
-2. Dans la carte Séquenceur, choisis la piste, puis, dans **Sortie** : coche **« Jouer en MIDI »** et choisis le **canal** du synthé. Une ligne verte confirme « Joue sur le canal… ».
+2. Dans la carte Séquenceur, chaque piste a une ligne avec sa **pastille MIDI**. Clique la pastille pour l'activer : elle devient **verte** et affiche « MIDI · canal… ». Choisis ensuite le **Canal** du synthé, juste sous les 4 lignes.
 3. Lance la boîte (Start) : la piste joue.
 
 > Attention : le canal de la carte « MIDI, métronome et mesure » est celui du **métronome**, pas celui des pistes.
@@ -147,6 +147,15 @@ Chaque piste a son canal : avec 2 pistes sur 2 canaux, tu fais jouer **2 synthé
 ### Les deux façons d'écrire une piste
 - **Pas à pas** : jusqu'à 32 pas ; tu allumes les pas qui jouent et tu choisis la note de chacun.
 - **Euclidien** : tu choisis un nombre de **coups** et la boîte les répartit le plus régulièrement possible sur la longueur. 3 coups sur 8 donnent le tresillo, 5 sur 16 une bossa, 4 sur 16 un coup par temps… La **rotation** décale le rythme. Chaque coup joue la note du pas où il tombe.
+
+### Écrire une piste
+- **Clique une ligne** pour choisir la piste à modifier.
+- **Clique un pas** pour l'allumer ou l'éteindre, en mode pas à pas.
+- Sous les pas, choisis ce que tu veux régler : **Note**, **Vélocité**, **Probabilité**, **Sous-pas**, **Longueur**, **Canal** ou **Aléatoire**. Puis **glisse à la souris sur les barres** pour dessiner les valeurs, pas par pas ou en balayant plusieurs pas d'un coup.
+- Pour les notes, la hauteur de la barre choisit une note **de la gamme** ; les boutons « ▼ octave » et « ▲ octave » déplacent la plage affichée.
+- « Tout allumer », « Tout éteindre » et « Copier la 1re moitié sur la 2e » font gagner du temps.
+- Les réglages moins courants sont rangés dans **« Plus de réglages de la piste »**.
+- Un petit **« ? »** à côté d'un réglage l'explique en une phrase.
 
 ### Les réglages d'une piste
 - **Longueur** (1 à 32 pas), **durée d'un pas** (1/16, 1/8, 1/16 triolet, 1/4, 1/32) et **sens de lecture** (avant, arrière, aller-retour, hasard). Des pistes de longueurs différentes se décalent entre elles : c'est une source de polyrythmes.
@@ -159,8 +168,8 @@ Chaque piste a son canal : avec 2 pistes sur 2 canaux, tu fais jouer **2 synthé
   - **humanisation** : une petite variation de vélocité ;
   - **accent** : le premier coup de chaque tour est plus fort.
 
-### Les réglages d'un pas
-- **Note** : seules les notes de la gamme sont proposées.
+### Les réglages d'un pas (les barres)
+- **Note** : seules les notes de la gamme sont possibles.
 - **Vélocité**.
 - **Canal** : celui de la piste, ou un autre. Un pas peut ainsi jouer sur un autre synthé que le reste de la piste.
 - **Probabilité** : de 100 % à 13 %.
@@ -191,7 +200,7 @@ La boîte n'a pas d'écran, mais l'ordinateur peut en faire un : une page qui af
 ### Les réglages
 - **Transport et tempo** : Start, Pause / Reprendre, Stop, Début. Un **tempo précis** au dixième (par exemple 92,5) et un bouton **Tap** pour taper le tempo. Le potard reprend la main dès que tu le bouges.
 - **Les 3 jacks** : clique sur le mode voulu, il est envoyé et **enregistré tout de suite**. Dessous : la **probabilité**, l'**impulsion** (gate ou trigger), le **décalage**, et **N** pour la division libre. « Identifier » fait battre ce jack seul pendant 15 s ; « Place » indique où il est sur la boîte.
-- **Séquenceur** : voir section 4.
+- **Séquenceur** : juste sous la boîte, sur toute la largeur. Voir section 4.
 - **MIDI, métronome et mesure** :
   - la **mesure** : 4/4, 3/4, 2/4, 5/4, 6/8 ou 7/8 (pour le mode Mesure, le Reset, la LED et le métronome) ;
   - **envoyer la position de départ** : conseillé, laisse coché ;
