@@ -751,10 +751,10 @@ static void savePreset(uint8_t slot) {
 
 static void defaultTrack(uint8_t t, Track &k) {
   //            mode          len hits rot div ch midi scale root tr  dir  prob rn rr hum acc
-  Track d[4] = {{TRACK_EUCLID, 16, 5, 0, 0, 9, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // kick
-                {TRACK_EUCLID,  8, 3, 0, 0, 9, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // snare
-                {TRACK_EUCLID, 16, 7, 0, 0, 9, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // hat
-                {TRACK_STEPS,  16, 4, 0, 0, 0, 0, 1, 0, 24, 0, 100, 0, 12, 0, 0}};   // C minor line
+  Track d[4] = {{TRACK_EUCLID, 16, 5, 0, 0, 0, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // channel 1
+                {TRACK_EUCLID,  8, 3, 0, 0, 1, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // channel 2
+                {TRACK_EUCLID, 16, 7, 0, 0, 2, 0, 0, 0, 24, 0, 100, 0, 12, 0, 20},   // channel 3
+                {TRACK_STEPS,  16, 4, 0, 0, 3, 0, 1, 0, 24, 0, 100, 0, 12, 0, 0}};   // channel 4, C minor line
   k = d[t];
 }
 

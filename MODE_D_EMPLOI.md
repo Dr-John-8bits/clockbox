@@ -142,7 +142,7 @@ La boîte contient un **séquenceur de 4 pistes**. Chaque piste joue des **notes
 
 > Attention : le canal de la carte « MIDI, métronome et mesure » est celui du **métronome**, pas celui des pistes.
 
-Chaque piste a son canal : avec 2 pistes sur 2 canaux, tu fais jouer **2 synthés en même temps**, avec 2 séquences différentes. Le canal **ALL** envoie la même note aux 16 canaux.
+Par défaut, la piste 1 joue sur le canal 1, la piste 2 sur le canal 2, la piste 3 sur le canal 3 et la piste 4 sur le canal 4 ; tu changes ça comme tu veux. Chaque piste a son canal : avec 2 pistes sur 2 canaux, tu fais jouer **2 synthés en même temps**, avec 2 séquences différentes. Le canal **ALL** envoie la même note aux 16 canaux.
 
 ### Les deux façons d'écrire une piste
 - **Pas à pas** : jusqu'à 32 pas ; tu allumes les pas qui jouent et tu choisis la note de chacun.
